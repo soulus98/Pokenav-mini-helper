@@ -9,15 +9,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/soulus98/ocrbot.git"
+    "url": "git+https://github.com/soulus98/Pokenav-mini-helper"
   },
   "author": "Soul Green",
   "license": "Unlicenced",
   "private": true,
   "bugs": {
-    "url": "https://github.com/soulus98/ocrbot/issues"
+    "url": "https://github.com/soulus98/Pokenav-mini-helper/issues"
   },
-  "homepage": "https://github.com/soulus98/ocrbot#readme",
+  "homepage": "https://github.com/soulus98/Pokenav-mini-helper#readme",
   "dependencies": {
     "@mapbox/node-pre-gyp": "^1.0.5",
     "discord.js": "^13.0.0",
