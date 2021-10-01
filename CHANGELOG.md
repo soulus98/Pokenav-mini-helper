@@ -1,5 +1,2 @@
 # v1.0
-Todo:
-- Changelog
-- Readme
-- Fix git in package
+* New bot. Read the [README file](README.md) for information
