@@ -1,7 +1,7 @@
 # v1.0
 * New bot. Read the [README file](README.md) for information
 
-# v2.0.1 (2021-Oct-02)
+# v1.0.1 (2021-Oct-02)
 * Removed a catastrophic filter issue where it would delete raid embeds!
 * Added "User is on cooldown" to the Pokenav filter
 * Added channel name to add and remove commands console logs
