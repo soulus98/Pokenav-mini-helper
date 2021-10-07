@@ -115,6 +115,32 @@ client.once("ready", async () => {
 	console.log("\n======================================================================================\n");
 });
 
+client.on("shardError", (error) => {
+	console.error(`[${dateToTime(new Date())}]: Websocket disconnect: ${error}`);
+});
+
+client.on("shardResume", () => {
+	if (loaded) {
+		console.error("Resumed! Refreshing Activity...");
+		client.user.setActivity(`${ver}`);
+	}
+});
+
+client.on("shardDisconnect", () => {
+	console.error("Disconnected!");
+});
+
+client.on("shardReady", () => {
+	if (loaded) {
+		console.error("Reconnected! Refreshing Activity...");
+		client.user.setActivity(`${ver}`);
+	}
+});
+
+client.on("shardReconnecting", () => {
+	console.error("Reconnecting...");
+});
+
 client.on("messageCreate", async message => {
 	if (message.author.id == 428187007965986826 && filterList.includes(message.channel.id)) {
 		filter(message);

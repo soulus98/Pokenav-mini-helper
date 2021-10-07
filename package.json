@@ -1,6 +1,6 @@
 {
   "name": "Mini Pokenav Helper",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Pokenav message deleting mini bot developed for the PoGo Raids discord server",
   "main": "bot.js",
   "scripts": {
