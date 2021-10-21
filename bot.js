@@ -4,6 +4,7 @@ const fs = require("fs"),
 			{ handleCommand } = require("./handlers/commands.js"),
 			{ dateToTime, errorMessage } = require("./func/misc.js"),
 			{ filter, loadFilterList } = require("./func/filter.js"),
+			{ respondVerify } = require("./func/verify.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({ intents: [
@@ -142,8 +143,12 @@ client.on("shardReconnecting", () => {
 });
 
 client.on("messageCreate", async message => {
-	if (message.author.id == 428187007965986826 && filterList.includes(message.channel.id)) {
-		filter(message);
+	if (message.author.id == 428187007965986826){
+		if (filterList.includes(message.channel.id)) {
+			filter(message);
+		} else if (ops.respondVerify){
+			respondVerify(message);
+		}
 	}
 	if (message.author.bot) return; // Bot? Cancel
 	const postedTime = new Date();

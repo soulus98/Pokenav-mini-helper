@@ -1,3 +1,4 @@
 {"token":"InsertBotTokenHere",
 "prefix":"]",
-"serverID":"InsertServerIDhere"}
+"serverID":"InsertServerIDhere",
+"respondVerify":true}
