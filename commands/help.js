@@ -5,14 +5,38 @@ module.exports = {
 	description: "Displays all commands and information for specific commands.",
   aliases: ["command", "commands"],
   usage: `\`${ops.prefix}help [command name]\``,
-	permissions: "MANAGE_GUILD",
+	permissions: "VIEW_CHANNEL",
+	type:"Info",
 	execute(message, args) {
 		return new Promise(function(resolve) {
 			const data = [];
 			const { commands } = message.client;
+			if (message.channel.type === "dm"){
+				replyNoMention(message, "There is no reason to request help in a dm. Please do so in the relevant server");
+				resolve();
+				return;
+			}
+			if (!message.member.permissionsIn(ops.logsChannel).has("VIEW_CHANNEL")){
+				replyNoMention(message, `Hey trainer,
+
+Welcome to the server!
+To confirm that you are at least level 30, we need you to send a screenshot of your Pokémon GO profile.
+Please do so in this channel.
+
+Thank you. `);
+				resolve();
+				return;
+			}
 			if (!args.length) {
 				data.push("Here's a list of all my commands:");
-				data.push(commands.map(command => "`" + ops.prefix + command.name).join("`\n"));
+				const cg = groupCommands(commands);
+				let x = 0;
+				for (const group in cg) {
+					data.push(group + ":");
+					data.push(cg[group].map(command => "`" + ops.prefix + command.name).join("`\n"));
+					x++;
+					if (x < Object.keys(cg).length) data.push("`");
+				}
 				data.push(`\`You can use \`${ops.prefix}help [command name]\` for information on a specific command.`);
 				replyNoMention(message, data.join("\n"));
 				resolve(", and it was successful.");
@@ -45,4 +69,13 @@ function dataPush(data, command){
 	if (command.usage) data.push(`**Usage:** ${command.usage}`);
 	if (command.cooldown) data.push(`**Cooldown:** ${command.cooldown} second(s)`);
 	return data;
+}
+function groupCommands(commands) {
+	const commandGroups = commands.reduce((groups, item) => {
+		const group = (groups[item.type] || []);
+		group.push(item);
+		groups[item.type] = group;
+		return groups;
+	}, {});
+	return commandGroups;
 }

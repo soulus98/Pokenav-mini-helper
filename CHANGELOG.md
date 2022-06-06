@@ -1,3 +1,8 @@
+# v1.2 (2022-Jun-06)
+* Updated to where the main bot's cleanup process was at
+* Added `list` command to see which channels are currently on the filter list
+* expanded the `help` command
+
 # v1.1
 * Added a `$verify` responder that works in any channel that the bot can see that *isn't* being filtered.
 * Added **respondVerify** as a toggle and a messagetxt.js entry

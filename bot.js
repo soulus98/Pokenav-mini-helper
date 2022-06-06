@@ -1,17 +1,28 @@
-const fs = require("fs"),
+const { token } = require("./server/keys.json"),
+			fs = require("fs"),
 			path = require("path"),
 			Discord = require("discord.js"),
 			{ handleCommand } = require("./handlers/commands.js"),
 			{ dateToTime, errorMessage } = require("./func/misc.js"),
 			{ filter, loadFilterList } = require("./func/filter.js"),
-			{ respondVerify } = require("./func/verify.js"),
 			ver = require("./package.json").version;
 
-const client = new Discord.Client({ intents: [
+const client = new Discord.Client({
+			intents: [
 				Discord.Intents.FLAGS.GUILDS,
-				Discord.Intents.FLAGS.GUILD_MEMBERS,
 				Discord.Intents.FLAGS.GUILD_MESSAGES,
-			], partials: ["CHANNEL"] }),
+			],
+			partials: [
+				"CHANNEL",
+			],
+			presence: {
+				status: "online",
+				activities: [{
+					name: require("./server/config.json").activity || ver,
+					type: "PLAYING",
+				}],
+			},
+		}),
 			launchDate = new Date();
 let loaded = false,
 		server = {},
@@ -28,8 +39,7 @@ async function load(){
 		await loadFilterList().then((list) => {
 			filterList = list;
 		});
-		console.log(ops.token);
-		client.login(ops.token);
+		client.login(token);
 }
 // Loads (or re-loads) the bot settings
 function loadConfigs(){

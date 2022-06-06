@@ -1,6 +1,10 @@
 /*
 
 This is a template for new commands:
+The types that I use are:
+Pokenav Cleanup
+Info
+Admin
 
 module.exports = {
 	name: "",
