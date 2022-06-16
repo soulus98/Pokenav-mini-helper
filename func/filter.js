@@ -18,7 +18,7 @@ function cleanup(message, group) {
 			|| message.embeds[0]?.fields[1]?.name?.toLowerCase().includes("host")
 			|| message.embeds[0]?.fields[1]?.name?.toLowerCase().includes("members")
 			) return;
-			console.log(message.embeds[0] || message.contents);
+			console.log(message.embeds[0] || message.content);
 			return deleteMessage(message);
 		case "badge":
 			if (
