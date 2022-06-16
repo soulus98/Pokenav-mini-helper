@@ -4,7 +4,7 @@ const { token } = require("./server/keys.json"),
 			Discord = require("discord.js"),
 			{ handleCommand } = require("./handlers/commands.js"),
 			{ dateToTime, errorMessage } = require("./func/misc.js"),
-			{ filter, loadFilterList } = require("./func/filter.js"),
+			{ cleanup, loadCleanupList } = require("./func/filter.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
@@ -26,7 +26,7 @@ const client = new Discord.Client({
 			launchDate = new Date();
 let loaded = false,
 		server = {},
-		filterList = [];
+		cleanupList = new Discord.Collection();
 ops = {};
 module.exports = { loadConfigs };
 
@@ -36,8 +36,8 @@ async function load(){
 	console.log("Server starting...");
 		await loadConfigs();
 		await loadCommands();
-		await loadFilterList().then((list) => {
-			filterList = list;
+		await loadCleanupList().then((list) => {
+			cleanupList = list;
 		});
 		client.login(token);
 }
@@ -152,14 +152,24 @@ client.on("shardReconnecting", () => {
 	console.error("Reconnecting...");
 });
 
-client.on("messageCreate", async message => {
-	if (message.author.id == 428187007965986826){
-		if (filterList.includes(message.channel.id)) {
-			filter(message);
-		} else if (ops.respondVerify){
-			respondVerify(message);
+async function checkCleanupList(message) {
+	if (message.author.id != 428187007965986826) return; // pokenav message filtering
+	const filtered = [];
+	for (const g of cleanupList) {
+		if (g[1].includes(message.channel.id)) {
+			cleanup(message, g[0]);
+			filtered.push(true);
+		} else {
+			filtered.push(false);
+		}
+		if (filtered.length == cleanupList.size) {
+			return;
 		}
 	}
+}
+
+client.on("messageCreate", async message => {
+	await checkCleanupList(message);
 	if (message.author.bot) return; // Bot? Cancel
 	const postedTime = new Date();
 	const dm = (message.channel.type == "DM") ? true : false;
@@ -188,7 +198,7 @@ process.on("uncaughtException", (err) => {
 });
 
 process.on("unhandledRejection", (err, promise) => {
-			errorMessage(new Date(), false, `Unhandled rejection at ${promise} reason: ${err}`);
+	console.error(`[${dateToTime(new Date())}]: Unhandled rejection at `, promise, `reason: ${err}`);
 });
 
 process.on("SIGINT", () => {

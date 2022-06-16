@@ -35,7 +35,7 @@ module.exports = {
 					}, 1000);
 					resolve(`, and removed ${ch.name}#${id} from the Pokenav ${group} cleanup list.`);
 				}).catch(() => {
-					message.reply(`${(args[1]) ? "That" : "This"} channel was not found in ${(group == "all") ? "any " : `the ${group}`}cleanup list.`);
+					message.reply(`${(args[1]) ? "That" : "This"} channel was not found in ${(group == "all") ? "any" : `the ${group}`} cleanup list.`);
 					resolve(`, but it failed, since ${ch.name}#${id} was not found in the ${group} cleanup list.`);
 				});
 			}).catch(() => {

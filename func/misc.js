@@ -22,4 +22,4 @@ function errorMessage(time, dm, string){
 	return;
 }
 
-module.exports = { dateToTime, performanceLogger, replyNoMention, errorMessage };
+module.exports = { dateToTime, performanceLogger, replyNoMention, errorMessage, groupList: ["raid", "badge", "pvpiv"] };
