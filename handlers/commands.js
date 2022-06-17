@@ -1,4 +1,4 @@
-const { dateToTime } = require("../func/misc.js");
+const { dateToTime, dev } = require("../func/misc.js");
 
 function handleCommand(message, postedTime){
   const client = message.client;
@@ -16,14 +16,14 @@ function handleCommand(message, postedTime){
     console.log(logString);
     return message.reply("This command cannot be used in a DM");
   }
-  if (command.permissions && message.author.id != "146186496448135168") {																				// Permission checking
+  if (command.permissions && message.author.id != dev) {																				// Permission checking
     const authorPerms = message.channel.permissionsFor(message.author);
     if (!authorPerms || !authorPerms.has(command.permissions)) {
       logString = logString + `, but it failed, as ${ops.prefix}${commandName} requires ${command.permissions}, and the user does not possess it.`;
       console.log(logString);
       return message.reply(`You must possess the ${command.permissions} permission to execute \`${ops.prefix}${commandName}\``);
     }
-  }
+  } else if (!(message.member.roles.cache.has(ops.modRole) || message.member.permissions.has("ADMINISTRATOR")) && message.author.id != dev) return;
   if (command.args && !args.length) {																// Checking for arguments if an argument is required
     let reply = "You didn't provide any arguments.";
     if (command.usage) {

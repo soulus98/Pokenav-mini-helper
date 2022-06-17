@@ -1,7 +1,10 @@
 # v1.2 (2022-Jun-06)
-* Updated to where the main bot's cleanup process was at
+* Updated to where the main bot's cleanup process was at:
+ * Made the bot greedy, deleting *everything* that isn't a raid.
+ * Updated cleanup to work with slash commands, and made 3 groups: `raid`, `badge`, and `pvpiv`.
+ * Added a mandatory `group` argument to the `]add` and `]rem` commands. `]rem` can have `all` as the group to easily remove it from all 3 groups
 * Added `list` command to see which channels are currently on the filter list
-* expanded the `help` command
+* Expanded the `help` command to include command groups
 
 # v1.1
 * Added a `$verify` responder that works in any channel that the bot can see that *isn't* being filtered.

@@ -6,7 +6,6 @@ module.exports = {
   aliases: ["quit", "end"],
   usage: `\`${ops.prefix}quit\``,
 	guildOnly:true,
-	permissions: "MANAGE_GUILD",
 	type:"Admin",
 	execute(message) {
 		return new Promise(function(resolve) {

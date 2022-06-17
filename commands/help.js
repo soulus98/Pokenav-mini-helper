@@ -5,28 +5,11 @@ module.exports = {
 	description: "Displays all commands and information for specific commands.",
   aliases: ["command", "commands"],
   usage: `\`${ops.prefix}help [command name]\``,
-	permissions: "VIEW_CHANNEL",
 	type:"Info",
 	execute(message, args) {
 		return new Promise(function(resolve) {
 			const data = [];
 			const { commands } = message.client;
-			if (message.channel.type === "dm"){
-				replyNoMention(message, "There is no reason to request help in a dm. Please do so in the relevant server");
-				resolve();
-				return;
-			}
-			if (!message.member.permissionsIn(ops.logsChannel).has("VIEW_CHANNEL")){
-				replyNoMention(message, `Hey trainer,
-
-Welcome to the server!
-To confirm that you are at least level 30, we need you to send a screenshot of your Pokémon GO profile.
-Please do so in this channel.
-
-Thank you. `);
-				resolve();
-				return;
-			}
 			if (!args.length) {
 				data.push("Here's a list of all my commands:");
 				const cg = groupCommands(commands);

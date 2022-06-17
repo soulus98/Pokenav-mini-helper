@@ -3,7 +3,7 @@ const { token } = require("./server/keys.json"),
 			path = require("path"),
 			Discord = require("discord.js"),
 			{ handleCommand } = require("./handlers/commands.js"),
-			{ dateToTime, errorMessage } = require("./func/misc.js"),
+			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
 			{ cleanup, loadCleanupList } = require("./func/filter.js"),
 			ver = require("./package.json").version;
 
@@ -85,43 +85,23 @@ function loadCommands(){
 // If it is called from the main event, it sends a reply message
 // This is vital, else someone could change the settings by simply inviting the bot to their server and being admin
 // TODO: Make different settings for different servers. It is not necessary, but would be good practice
-async function checkServer(message){
-	const dev = await client.users.fetch("146186496448135168", false, true);
-	// 216412752120381441
-	if (ops.serverID === undefined) return;
-	if (message){
-		await message.reply("This is not the intended server. Goodbye forever :wave:").catch(() => {
-				console.error(`[${dateToTime(new Date())}]: Error: I can not reply to ${message.url}${message.channel}.\nContent of mesage: "${message.content}. Sending a backup message...`);
-				message.channel.send("This is not the intended server. Goodbye forever :wave:");
-			});
-		message.guild.leave().then(s => {
-			console.log(`Left: ${s}#${s.id}, as it is not the intended server.`);
-			dev.send(`**Dev message: **Left: ${s}#${s.id}`).catch(console.error);
-		}).catch(console.error);
-	}
-	const activeServers = client.guilds.cache;
-	activeServers.each(serv => {
-		if (serv.id != ops.serverID){
-			serv.leave().then(s => {
-				console.log(`Left: ${s}, as it is not the intended server.`);
-				dev.send(`**Dev message: **Left: ${s}#${s.id}`).catch(console.error);
-			}).catch(console.error);
-		}
-	});
-}
 
 load();
 
 client.once("ready", async () => {
 	server = await client.guilds.fetch(ops.serverID);
-	const dev = await client.users.fetch("146186496448135168", false, true);
-	checkServer();
+	const soul = await client.users.fetch(dev, false, true);
 	client.user.setActivity(`${ver}`);
 	if (server == undefined){
 		console.log("\nOops the screenshot server is broken.");
 		return;
 	}
-	dev.send(`**Dev message: **Loaded mini bot in guild: "${server.name}"#${server.id}`);
+	const activeServers = client.guilds.cache;
+	const activeServerList = [];
+	activeServers.each(serv => activeServerList.push(`"${serv.name}" aka #${serv.id}`));
+	soul.send(`**Dev message:** Active in:\n${activeServerList.join("\n")}`).catch(console.error);
+	soul.send(`**Dev message:** Loaded cleaup bot in guild: "${server.name}"#${server.id}`).catch(console.error);
+	console.log(`\nActive in:\n${activeServerList.join("\n")}`);
 	console.log(`\nServer started at: ${launchDate.toLocaleString()}. Loaded in guild: "${server.name}"#${server.id}`);
 	console.log("\n======================================================================================\n");
 });
@@ -173,10 +153,6 @@ client.on("messageCreate", async message => {
 	if (message.author.bot) return; // Bot? Cancel
 	const postedTime = new Date();
 	const dm = (message.channel.type == "DM") ? true : false;
-	if (!dm && ops.serverID && message.guild.id != ops.serverID){ // If we are in the wrong server
-		checkServer(message); // It passes message so that it can respond to the message that triggered it
-		return;
-	}
 	if (dm) {
 		if (message.content.startsWith("$")) {
 			message.reply("Commands starting with `$` are for a different bot (Pokénav).").catch(() => {
@@ -190,7 +166,7 @@ client.on("messageCreate", async message => {
 			});
 		}
 		return;
-	} else handleCommand(message, postedTime); // command handler
+	} else if (message.guild == server) handleCommand(message, postedTime); // command handler
 });
 
 process.on("uncaughtException", (err) => {
