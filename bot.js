@@ -157,7 +157,9 @@ client.on("messageCreate", async message => {
 		if (message.content.startsWith("$")) {
 			message.reply("Commands starting with `$` are for a different bot (Pokénav).").catch(() => {
 				errorMessage(postedTime, dm, `Error: I can not reply to ${message.url}${message.channel}.\nContent of mesage: "${message.content}. Sending a backup message...`);
-				message.author.send(`Commands starting with \`$\` are for a different bot (Pokénav).\nYou can use them in <#${ops.profileChannel}> once you have confirmed you are above level ${ops.targetLevelRole} by sending a screenshot in <#${ops.screenshotChannel}>.`);
+				message.author.send(`Commands starting with \`$\` are for a different bot (Pokénav).\nYou can use them in <#${ops.profileChannel}> once you have confirmed you are above level ${ops.targetLevelRole} by sending a screenshot in <#${ops.screenshotChannel}>.`).catch(() => {
+					errorMessage(postedTime, dm, `Error: I can not send a message to ${message.author.username}${message.author}.`);
+				});
 			});
 		} else {
 			message.reply(`This bot does not currently work in dms.\nPlease send your profile screenshot in <#${ops.screenshotChannel}>.`).catch(() => {
