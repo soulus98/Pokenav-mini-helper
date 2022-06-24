@@ -100,7 +100,7 @@ client.once("ready", async () => {
 	const activeServerList = [];
 	activeServers.each(serv => activeServerList.push(`"${serv.name}" aka #${serv.id}`));
 	soul.send(`**Dev message:** Active in:\n${activeServerList.join("\n")}`).catch(console.error);
-	soul.send(`**Dev message:** Loaded cleaup bot in guild: "${server.name}"#${server.id}`).catch(console.error);
+	soul.send(`**Dev message:** Loaded cleanup bot in guild: "${server.name}"#${server.id}`).catch(console.error);
 	console.log(`\nActive in:\n${activeServerList.join("\n")}`);
 	console.log(`\nServer started at: ${launchDate.toLocaleString()}. Loaded in guild: "${server.name}"#${server.id}`);
 	console.log("\n======================================================================================\n");
