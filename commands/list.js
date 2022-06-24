@@ -5,7 +5,7 @@ module.exports = {
   aliases: ["ls", "list", "list-channels", "list-filter", "filter-channels"],
   usage: `\`${ops.prefix}\``,
 	guildOnly:true,
-	type:"Pokenav Cleanup",
+	type:"Info",
 	async execute(message) {
     loadCleanupList().then((list) => {
       if (list.length == 0) {
