@@ -12,7 +12,11 @@ module.exports = {
 	async execute(message, args) {
 		if (args[0].toLowerCase() == "cleanup") {
 			loadCleanupList().then((list) => {
-				if (list.length == 0) {
+				const chAmount = list.reduce((acc, item) => {
+					acc = acc + item.length;
+					return acc;
+				}, 0);
+				if (chAmount == 0) {
 					message.reply("There are no channels currently being filtered");
 					return;
 				}
@@ -30,8 +34,12 @@ module.exports = {
 			});
 		} else if (args[0].toLowerCase() == "raidcat") {
 			loadRaidCatList().then((list) => {
-				if (list.length == 0) {
-					message.reply("There are raid categories currently being watched");
+				const catAmount = list.reduce((acc, item) => {
+					acc = acc + item.length;
+					return acc;
+				}, 0);
+				if (catAmount == 0) {
+					message.reply("There are no raid categories currently being watched");
 					return;
 				}
 				const data = ["Here is a list of the currently watched raid categories:"];

@@ -6,8 +6,15 @@ let list = new Discord.Collection();
 
 module.exports = {
   checkCategory(channel){
-    console.log(channel.parent.id);
-    console.log(list.includes(channel.parent.id));
+		const cat = channel.parent.id;
+    const raidAnnounceChannel = list.reduce((acc, group, k) => {
+			if (group.includes(cat)) acc = k;
+			return acc;
+		}, false);
+		if (!raidAnnounceChannel)	return console.log("testo missing");
+		if (cat.) {
+
+		}
   },
   addRaidCat(cat, ch) {
     return new Promise((resolve, reject) => {
