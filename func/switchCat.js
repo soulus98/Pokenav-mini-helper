@@ -1,19 +1,27 @@
 const fs = require("fs"),
 			path = require("path"),
 			{ errorMessage } = require("../func/misc.js"),
-			Discord = require("discord.js");
+			Discord = require("discord.js"),
+			catLimit = 3;
 let list = new Discord.Collection();
 
 module.exports = {
   checkCategory(channel){
-		const cat = channel.parent.id;
+		const pokenavChannel = channel.guild.channels.fetch(ops.pokenavChannel);
+		const oldCategory = channel.parentId;
     const raidAnnounceChannel = list.reduce((acc, group, k) => {
-			if (group.includes(cat)) acc = k;
+			if (group.includes(oldCategory)) acc = k;
 			return acc;
 		}, false);
-		if (!raidAnnounceChannel)	return console.log("testo missing");
-		if (cat.) {
-
+		if (oldCategory.parent.children.cache.size == catLimit) {
+			const group = list.get(raidAnnounceChannel);
+			group.forEach((c) => {
+				channel.guild.channels.fetch(c).then((cat) => {
+					if (cat.children.cache.size < catLimit / 2) {
+						return pokenavChannel.send(`<@428187007965986826> set raid-lobby-category <#${raidAnnounceChannel}> ${cat}`);
+					}
+				});
+			});
 		}
   },
   addRaidCat(cat, ch) {
