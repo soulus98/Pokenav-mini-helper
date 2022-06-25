@@ -4,7 +4,8 @@ const { token } = require("./server/keys.json"),
 			Discord = require("discord.js"),
 			{ handleCommand } = require("./handlers/commands.js"),
 			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
-			{ cleanup, loadCleanupList } = require("./func/filter.js"),
+			{ checkCleanupList, loadCleanupList } = require("./func/filter.js"),
+			{ checkCategory, loadRaidCatList } = require("./func/switchCat.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
@@ -25,8 +26,7 @@ const client = new Discord.Client({
 		}),
 			launchDate = new Date();
 let loaded = false,
-		server = {},
-		cleanupList = new Discord.Collection();
+		server = {};
 ops = {};
 module.exports = { loadConfigs };
 
@@ -36,9 +36,8 @@ async function load(){
 	console.log("Server starting...");
 		await loadConfigs();
 		await loadCommands();
-		await loadCleanupList().then((list) => {
-			cleanupList = list;
-		});
+		await loadCleanupList();
+		await loadRaidCatList();
 		client.login(token);
 }
 // Loads (or re-loads) the bot settings
@@ -132,21 +131,9 @@ client.on("shardReconnecting", () => {
 	console.error("Reconnecting...");
 });
 
-async function checkCleanupList(message) {
-	if (message.author.id != 428187007965986826) return; // pokenav message filtering
-	const filtered = [];
-	for (const g of cleanupList) {
-		if (g[1].includes(message.channel.id)) {
-			cleanup(message, g[0]);
-			filtered.push(true);
-		} else {
-			filtered.push(false);
-		}
-		if (filtered.length == cleanupList.size) {
-			return;
-		}
-	}
-}
+client.on("channelCreate", async (channel) => {
+	await checkCategory(channel);
+});
 
 client.on("messageCreate", async message => {
 	await checkCleanupList(message);
