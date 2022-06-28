@@ -6,22 +6,24 @@ const fs = require("fs"),
 let list = new Discord.Collection();
 
 module.exports = {
-  checkCategory(channel){
-		const pokenavChannel = channel.guild.channels.fetch(ops.pokenavChannel);
-		const oldCategory = channel.parentId;
-    const raidAnnounceChannel = list.reduce((acc, group, k) => {
-			if (group.includes(oldCategory)) acc = k;
+  async checkCategory(channel){
+		const oldCategoryId = channel.parentId;
+    const raidAnnounceChannelId = list.reduce((acc, group, k) => {
+			if (group.includes(oldCategoryId)) acc = k;
 			return acc;
 		}, false);
-		if (oldCategory.parent.children.cache.size == catLimit) {
-			const group = list.get(raidAnnounceChannel);
-			group.forEach((c) => {
-				channel.guild.channels.fetch(c).then((cat) => {
-					if (cat.children.cache.size < catLimit / 2) {
-						return pokenavChannel.send(`<@428187007965986826> set raid-lobby-category <#${raidAnnounceChannel}> ${cat}`);
-					}
-				});
-			});
+		if (!raidAnnounceChannelId) return;
+		const pokenavChannel = await channel.guild.channels.fetch(ops.pokenavChannel);
+		const oldCategory = await channel.guild.channels.fetch(oldCategoryId);
+		if (oldCategory.children.size >= catLimit) {
+			const group = list.get(raidAnnounceChannelId);
+			for (const c of group) {
+				const cat = await channel.guild.channels.fetch(c);
+				console.log(cat.children.size);
+				if (cat.children.size < catLimit / 2) {
+					return pokenavChannel.send(`<@428187007965986826> set raid-lobby-category ${raidAnnounceChannelId} ${cat.id}`);
+				}
+			}
 		}
   },
   addRaidCat(cat, ch) {
@@ -38,33 +40,20 @@ module.exports = {
       });
     });
   },
-  removeRaidCat(id, g) {
+  removeRaidCat(id) {
     return new Promise((resolve, reject) => {
-      if (g == "all") {
-        const removed = [];
-        for (const gr of list) {
-          if (gr[1].includes(id)) {
-            gr[1].splice(gr[1].indexOf(id));
-            removed.push(true);
-          } else {
-            removed.push(false);
-          }
+			const removed = [];
+      for (const item of list) {
+				const group = item[1];
+				if (group.includes(id)) {
+					removed.push(item[0]);
+					group.splice(group.indexOf(id));
+          list.set(item[0], group);
         }
-        if (removed.includes(true)) {
-          module.exports.saveRaidCatList().then(() => {
-            resolve();
-          });
-        } else {
-          reject();
-        }
-        return;
-      }
-      const group = list.get(g);
-      if (!group.includes(id)) return reject();
-      group.splice(group.indexOf(id));
-      list.set(g, group);
+			}
+			if (removed.length == 0) return reject();
       module.exports.saveRaidCatList().then(() => {
-        resolve();
+        resolve(removed);
       });
     });
   },

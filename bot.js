@@ -9,22 +9,22 @@ const { token } = require("./server/keys.json"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
-			intents: [
-				Discord.Intents.FLAGS.GUILDS,
-				Discord.Intents.FLAGS.GUILD_MESSAGES,
-			],
-			partials: [
-				"CHANNEL",
-			],
-			presence: {
-				status: "online",
-				activities: [{
-					name: require("./server/config.json").activity || ver,
-					type: "PLAYING",
-				}],
-			},
-		}),
-			launchDate = new Date();
+	intents: [
+		Discord.Intents.FLAGS.GUILDS,
+		Discord.Intents.FLAGS.GUILD_MESSAGES,
+	],
+	partials: [
+		"CHANNEL",
+	],
+	presence: {
+		status: "online",
+		activities: [{
+			name: require("./server/config.json").activity || ver,
+			type: "PLAYING",
+		}],
+	},
+}),
+launchDate = new Date();
 let loaded = false,
 		server = {};
 ops = {};
@@ -135,7 +135,7 @@ client.on("channelCreate", async (channel) => {
 	await checkCategory(channel);
 });
 
-client.on("messageCreate", async message => {
+client.on("messageCreate", async (message) => {
 	await checkCleanupList(message);
 	if (message.author.bot) return; // Bot? Cancel
 	const postedTime = new Date();
@@ -155,7 +155,12 @@ client.on("messageCreate", async message => {
 			});
 		}
 		return;
-	} else if (message.guild == server) handleCommand(message, postedTime); // command handler
+	}/* else if (ops.respondCashEnd && message.member?.roles.cache.has(ops.modRole) && message.content == "$end") {
+	 	console.log(`[${dateToTime(postedTime)}]: Used $end for ${message.author}`);
+	 	message.author.send("Don't forget to use `/end` next time. 😉");
+	 	message.reply("<@428187007965986826> end");
+	 	return;
+	}*/ else if (message.guild == server) handleCommand(message, postedTime); // command handler
 });
 
 process.on("uncaughtException", (err) => {

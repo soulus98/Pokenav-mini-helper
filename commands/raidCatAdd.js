@@ -1,5 +1,3 @@
-
-
 const { addRaidCat } = require("../func/switchCat.js"),
 			{ dateToTime } = require("../func/misc.js");
 
