@@ -11,7 +11,9 @@ module.exports = {
 		return new Promise((resolve) => {
 			// splitContent(message.content).then(([tier, data]) => {
 			splitContent(testoContent).then(([tier, data]) => {
-				console.log(tier, data);
+					for (let i = 0; i < data.length; i = i + 2) {
+						console.log(data[i], data[i+1]);
+					}
 			}).catch(([err, row]) => {
 				if (err == "short") {
 					message.reply("");
@@ -35,6 +37,7 @@ async function splitContent(input) {
 	for (const item of first) {
 		const second = item.split(" ");
 		if (first.indexOf(item) == 0) {
+			second.splice(0, 1);
 			tier = second.splice(0, 1)[0];
 		}
 		if (second.length < 2) throw ["short", first.indexOf(item) + 1];
