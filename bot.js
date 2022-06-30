@@ -103,6 +103,7 @@ client.once("ready", async () => {
 	console.log(`\nActive in:\n${activeServerList.join("\n")}`);
 	console.log(`\nServer started at: ${launchDate.toLocaleString()}. Loaded in guild: "${server.name}"#${server.id}`);
 	console.log("\n======================================================================================\n");
+	client.commands.get("reaction-roles-helper").execute().then((logString) => console.log("blah blah", logString)); //testo
 });
 
 client.on("shardError", (error) => {
