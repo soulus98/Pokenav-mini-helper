@@ -4,16 +4,23 @@ module.exports = {
 	name: "notify",
 	description: "PokeNav Notification roles setup",
   aliases: ["noti"],
-  usage: `\`${ops.prefix}\``, // testo
+  usage: `\`${ops.prefix} <boss(1)> [boss2] ...\``, // testo
 	guildOnly:true,
 	args:true,
 	execute(message, args) {
 		return new Promise((resolve) => {
 			pokeNavCheck(args, message).then(async (result) => {
-				console.log(result);
-					// make role
-					// $create notify-rule Cresselia boss:Cresselia
-					// set some shit for reaction based on tier... lol
+			  for (const boss of result){
+			    let role = message.guild.roles.cache.find(r => r.name.toLowerCase() == boss.toLowerCase());
+			    if (!role) {
+			      role = await message.guild.roles.create({ name: mon });
+			      console.log(role.name);
+			    }
+			  }
+        // check role
+				// make role
+				// $create notify-rule Cresselia boss:Cresselia
+				// set some shit for reaction based on tier... lol
 			}).catch((err) => {
 				if (err == "dupe") {
 					resolve(", but it failed, as duplicate entries were entered.");
