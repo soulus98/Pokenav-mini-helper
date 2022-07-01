@@ -103,7 +103,6 @@ client.once("ready", async () => {
 	console.log(`\nActive in:\n${activeServerList.join("\n")}`);
 	console.log(`\nServer started at: ${launchDate.toLocaleString()}. Loaded in guild: "${server.name}"#${server.id}`);
 	console.log("\n======================================================================================\n");
-	client.commands.get("reaction-roles-helper").execute().then((logString) => console.log("blah blah", logString)); //testo
 });
 
 client.on("shardError", (error) => {
@@ -156,7 +155,7 @@ client.on("messageCreate", async (message) => {
 			});
 		}
 		return;
-	}/* else if (ops.respondCashEnd && message.member?.roles.cache.has(ops.modRole) && message.content == "$end") {
+	} /* else if (ops.respondCashEnd && message.member?.roles.cache.has(ops.modRole) && message.content == "$end") {
 	 	console.log(`[${dateToTime(postedTime)}]: Used $end for ${message.author}`);
 	 	message.author.send("Don't forget to use `/end` next time. 😉");
 	 	message.reply("<@428187007965986826> end");
