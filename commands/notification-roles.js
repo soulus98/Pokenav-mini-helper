@@ -30,11 +30,11 @@ module.exports = {
 	},
 };
 
-async function pokeNavCheck(data, message, i) {
+async function pokeNavCheck(data, message, i, result) {
 	if (!i) i = 0;
+	if (!result) result = new Discord.Collection;
 	const pokenavChannel = await message.guild.channels.fetch(ops.pokenavChannel);
 	return new Promise(function(resolve, reject) {
-		const result = new Discord.Collection;
 		if (hasDuplicates(data)) return reject("dupe");
 		message.react("👀");
 		const mon = data[i];
@@ -56,12 +56,15 @@ async function pokeNavCheck(data, message, i) {
 						group.push(mon);
 						result.set(tier, group);
 					}
-					if (data.indexOf(mon) == data.length - 1) {
+					if (i == data.length - 1) {
 						if (result.size > 0) {
-							resolve(result);
+						  resolve(result);
 						} else {
 							reject("none");
 						}
+					} else {
+					  i++;
+					  pokeNavCheck(data, message, i, result).then((r) => resolve(r));
 					}
 				} catch (e) {
 					return console.error("An unexpected error in ]notify. error:", e);
