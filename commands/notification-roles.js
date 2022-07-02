@@ -11,9 +11,6 @@ module.exports = {
 		return new Promise((resolve) => {
 			pokeNavCheck(args, message).then(async (result) => {
         roleMake(result, message);
-        // check role
-				// make role
-				// $create notify-rule Cresselia boss:Cresselia
 				// set some shit for reaction based on tier... lol
 			}).catch((err) => {
 				if (err == "dupe") {
@@ -40,7 +37,7 @@ async function pokeNavCheck(data, message, i, result) {
 		const mon = data[i];
 		pokenavChannel.send(`<@428187007965986826> counters ${mon}`).then(() => {
 			const filter = m => {
-				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes(mon) || m.embeds[0]?.title.toLowerCase().includes("error"))
+				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes(mon) || m.embeds[0]?.title.toLowerCase().includes("error"));
 			};
 			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then((resp) => {
 				try {
@@ -84,17 +81,24 @@ async function pokeNavCheck(data, message, i, result) {
 	});
 }
 
-async function roleMake(input, message) {
-	const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
-	for (const tier of input){
-		for (const boss of tier[1]) {
-			let role = message.guild.roles.cache.find(r => r.name.toLowerCase() == boss.toLowerCase());
-			if (!role) {
-				role = await message.guild.roles.create({ name: boss });
-				pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`);
-			}
-		}
-	}
+function roleMake(input, message) {
+  return new Promise((resolve reject) => {
+    const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
+  	for (const tier of input){
+  		for (const boss of tier[1]) {
+  			let role = message.guild.roles.cache.find(r => r.name.toLowerCase() == boss.toLowerCase());
+  			if (!role) {
+  				message.guild.roles.create({ name: boss }).then((role) => {
+  				  pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then(() => {
+    				  if (input.indexOf(tier) == input.size - 1 && tier[1].indexOf(boss) == tier[1].length - 1) {
+    				    resolve();
+    				  } 
+  				  });
+  				});
+  			}
+  		}
+  	}
+  });
 }
 
 function hasDuplicates(array) {
