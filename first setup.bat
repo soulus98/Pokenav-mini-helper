@@ -1,4 +1,4 @@
 mkdir server
 echo {"token":""} > server\keys.json
-npm install
+npm install --production
 pause

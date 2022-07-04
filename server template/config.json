@@ -1,10 +1,8 @@
-{"prefix":"]",
-"serverID":"InsertServerIDhere",
-"activity":"",
-"modRole":"",
-"pokenavChannel":"",
-"notifyReactionChannel":"992236551192969266",
-"tier5msgId":"992236980769402930",
-"tier3msgId":"992244563123109960",
-"tier1msgId":"",
-"tierMmsgId":""}
+{
+	"prefix":"]",
+	"serverID":"InsertServerIDhere",
+	"activity":"",
+	"modRole":"",
+	"pokenavChannel":"",
+	"notifyReactionChannel":""
+}

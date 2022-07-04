@@ -3,9 +3,11 @@ const { token } = require("./server/keys.json"),
 			path = require("path"),
 			Discord = require("discord.js"),
 			{ handleCommand } = require("./handlers/commands.js"),
+			{ handleButton } = require("./handlers/buttons.js"),
 			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
 			{ checkCleanupList, loadCleanupList } = require("./func/filter.js"),
 			{ checkCategory, loadRaidCatList } = require("./func/switchCat.js"),
+			{ loadNotifyList } = require("./func/notify.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
@@ -38,6 +40,7 @@ async function load(){
 		await loadCommands();
 		await loadCleanupList();
 		await loadRaidCatList();
+		await loadNotifyList();
 		client.login(token);
 }
 // Loads (or re-loads) the bot settings
@@ -137,7 +140,7 @@ client.on("channelCreate", async (channel) => {
 
 client.on("messageCreate", async (message) => {
 	await checkCleanupList(message);
-	if (message.author.bot) return; // Bot? Cancel
+	if (message.author.bot && message.author.id != "155149108183695360") return; // Bot? Cancel
 	const postedTime = new Date();
 	const dm = (message.channel.type == "DM") ? true : false;
 	if (dm) {
@@ -161,6 +164,10 @@ client.on("messageCreate", async (message) => {
 	 	message.reply("<@428187007965986826> end");
 	 	return;
 	}*/ else if (message.guild == server) handleCommand(message, postedTime); // command handler
+});
+
+client.on("interactionCreate", (interaction) => {
+	if (interaction.isButton()) handleButton(interaction);
 });
 
 process.on("uncaughtException", (err) => {
