@@ -20,19 +20,22 @@ module.exports = {
 					if (typeof result == "string") return reject([result, messageData]);
 					roleMake(result, message).then(async () => {
 						const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
-						const newList = new Discord.Collection();
+						console.log("list", list);
+						console.log("result", result)
 						list.forEach((arr, key) => {
-							const newArr = [];
 							if (result.has(key)) {
-								for (const boss of arr) {
-									newArr.push(boss);
-								}
-								for (const boss of ) {
-
-								}
+						    const resultArr = result.get(key);
+								const newArr = arr.concat(resultArr);
+								list.set(key, newArr);
 							}
 						});
-
+						result.forEach((arr,key) =>{
+						  if (!list.has(key)) {
+						    list.set(key, arr);
+						  }
+						});
+						console.log("new list", list);
+						saveNotifyList();
 						// const row = new Discord.MessageActionRow()
 						// .addComponents([
 						// 	new Discord.MessageSelectMenu()
