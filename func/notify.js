@@ -20,22 +20,20 @@ module.exports = {
 					if (typeof result == "string") return reject([result, messageData]);
 					roleMake(result, message).then(async () => {
 						const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
-						console.log("list", list);
-						console.log("result", result)
+						console.log("Updating saved list");
 						list.forEach((arr, key) => {
 							if (result.has(key)) {
-						    const resultArr = result.get(key);
+								const resultArr = result.get(key);
 								const newArr = arr.concat(resultArr);
 								list.set(key, newArr);
 							}
 						});
-						result.forEach((arr,key) =>{
-						  if (!list.has(key)) {
-						    list.set(key, arr);
-						  }
-						});
-						console.log("new list", list);
-						saveNotifyList();
+						result.forEach((arr, key) => {
+							if (!list.has(key)) {
+								list.set(key, arr);
+							}
+						}); // exists roles zapdos
+						module.exports.saveNotifyList();
 						// const row = new Discord.MessageActionRow()
 						// .addComponents([
 						// 	new Discord.MessageSelectMenu()
@@ -114,6 +112,7 @@ module.exports = {
 
 async function argsCheck(args) {
 	let checkedArgs = args;
+	if (list.size == 0) return checkedArgs;
 	for (const item of list) {
 		checkedArgs = checkedArgs.filter((v) => !item[1].includes(v));
 		if (list.lastKey() == item[0]) return checkedArgs;
@@ -121,7 +120,6 @@ async function argsCheck(args) {
 }
 
 async function pokeNavCheck(data, message, messageData, i, result) {
-	console.log("Checking PokeNav info for tier");
 	if (!i) i = 0;
 	if (!result) result = new Discord.Collection;
 	if (!messageData) messageData = [];
@@ -129,6 +127,7 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 	return new Promise((resolve) => {
 		message.react("👀");
 		const mon = data[i];
+		console.log(`Checking ${mon} counters for tier`);
 		pokenavChannel.send(`<@428187007965986826> counters ${mon}`).then(() => {
 			const filter = m => {
 				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes(mon) || m.embeds[0]?.title.toLowerCase().includes("error"));
@@ -183,7 +182,7 @@ function roleMake(input, message) {
 			for (const boss of tier[1]) {
 				const role = message.guild.roles.cache.find(r => r.name.toLowerCase() == boss.toLowerCase());
 				if (!role) {
-					console.log("Roles");
+					console.log(`Creating role: ${boss}.`);
 					message.guild.roles.create({ name: boss }).then(() => {
 						pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then((msg) => {
 							msg.delete();
@@ -193,6 +192,7 @@ function roleMake(input, message) {
 						});
 					});
 				} else {
+					console.log(`Role: ${boss} already exists.`);
 					pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then((msg) => {
 						msg.delete();
 						if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
