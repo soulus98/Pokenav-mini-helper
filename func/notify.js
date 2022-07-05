@@ -9,13 +9,17 @@ let list = new Discord.Collection();
 module.exports = {
 	notify(message, args) {
 		return new Promise((resolve, reject) => {
+			if (hasDuplicates(args)) return reject(["dupe"]);
 			console.log(`[${dateToTime(new Date())}]Beginning notification workflow for: ${args.join(", ")}`);
 			argsCheck(args).then((checkedArgs) => {
 				if (!checkedArgs.length) return reject(["already"]);
 				const messageData = [];
 				const removedArgs = args.filter((v) => !checkedArgs.includes(v));
-				if (removedArgs.length) messageData.push(`The following bosses were found in the saved list. They won't be added: \`${removedArgs.join("`, `")}\``);
+				if (removedArgs.length) messageData.push(`The following bosses were found in the saved list: \`${removedArgs.join("`, `")}\``);
 				pokeNavCheck(checkedArgs, message).then(async ([result, md]) => {
+					for (const [k, v] of result) {
+						if (hasDuplicates(v)) return reject(["dupe", k]);
+					}
 					md.forEach((item) => messageData.push(item));
 					if (typeof result == "string") return reject([result, messageData]);
 					roleMake(result, message).then(async () => {
@@ -25,6 +29,8 @@ module.exports = {
 								const resultArr = result.get(key);
 								const newArr = arr.concat(resultArr).sort();
 								newList.set(key, newArr);
+							} else {
+								newList.set(key, arr);
 							}
 						});
 						result.forEach((arr, key) => {
@@ -32,7 +38,9 @@ module.exports = {
 								newList.set(key, arr.sort());
 							}
 						});
-						module.exports.deleteAndMakeMessages(message, newList, messageData).catch((err) => {
+						module.exports.deleteAndMakeMessages(message, newList).then(() => {
+							message.reply(`Notifications added.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+						}).catch((err) => {
 							message.reply(err);
 							console.error(err);
 						});
@@ -109,14 +117,55 @@ module.exports = {
 			} else resolve(false);
 		});
 	},
-	async deleteAndMakeMessages(input, newList, messageData) {
+	clearNotify(message, args){
+		return new Promise((resolve, reject) => {
+			if (args[0].toLowerCase() == "all") {
+				roleDelete(list, message).then(() => {
+					list = new Discord.Collection();
+					module.exports.deleteAndMakeMessages(message, list).then(() => {
+						message.reply("Notifications removed.");
+						resolve();
+					});
+				});
+				return;
+			}
+			if (hasDuplicates(args)) return reject(["dupe"]);
+			pokeNavCheck(args, message).then(async ([result, messageData]) => {
+				roleDelete(result, message).then(() => {
+					const newList = new Discord.Collection();
+					list.forEach((arr, k) => {
+						if (result.has(k)) {
+							const newArr = arr.filter((i) => !result.get(k).includes(i));
+							if (newArr.length) {
+								newList.set(k, newArr);
+							}
+						} else {
+							newList.set(k, arr);
+						}
+					});
+					module.exports.deleteAndMakeMessages(message, newList).then(() => {
+						message.reply(`Notifications removed.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+					}).catch((err) => {
+						message.reply(err);
+						console.error(err);
+					});
+				});
+			});
+		});
+	},
+	async deleteAndMakeMessages(input, newList) {
 		let notifyChannel;
 		if (input instanceof Discord.Message) notifyChannel = await input.guild.channels.fetch(ops.notifyReactionChannel);
 		else if (input instanceof Discord.Guild) notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
 		else throw "Could not load new notification reaction message";
 		if (!newList) newList = list;
 		const existingButtons = await notifyChannel.messages.fetch({ limit: 6 }).then((ms) => ms.filter((msg) => !msg.pinned));
-		notifyChannel.bulkDelete(existingButtons).then(() => {
+		return notifyChannel.bulkDelete(existingButtons).then(() => {
+			if (newList.size == 0) {
+				console.log("Saving blank list");
+				module.exports.saveNotifyList();
+				return;
+			}
 			console.log("Constructing buttons");
 			newList.forEach(async (arr, key) => {
 				if (arr.length > 25) {
@@ -133,10 +182,9 @@ module.exports = {
 						.addComponents(buttonArr));
 						buttonArr = [];
 					}
-					const bossName = boss[0].toUpperCase() + boss.substring(1);
 					const button = new Discord.MessageButton()
 					.setCustomId(boss)
-					.setLabel(bossName)
+					.setLabel(boss)
 					.setStyle("PRIMARY");
 					buttonArr.push(button);
 					if (arr.indexOf(boss) == arr.length - 1) {
@@ -148,9 +196,9 @@ module.exports = {
 				notifyChannel.send({ components: rowArr, embeds: [embed] }).then(() => {
 					if (newList.lastKey() == key) {
 						list = newList;
+						console.log(list);
 						console.log("Updating saved list");
 						module.exports.saveNotifyList().then(() => {
-							if (input instanceof Discord.Message) input.reply(`Notifications added.\n\nErrors:\n• ${messageData.join("\n• ")}`);
 							return;
 						});
 					}
@@ -180,7 +228,7 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 		console.log(`Checking ${mon} counters for tier`);
 		pokenavChannel.send(`<@428187007965986826> counters ${mon}`).then(() => {
 			const filter = m => {
-				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes(mon) || m.embeds[0]?.title.toLowerCase().includes("error"));
+				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes("tier") || m.embeds[0]?.title.toLowerCase().includes("error"));
 			};
 			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then((resp) => {
 				try {
@@ -192,9 +240,10 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 					} else {
 						const tierLocation = respTitle.toLowerCase().indexOf("tier");
 						const tier = respTitle.slice(tierLocation, respTitle.length - 1);
+						const newMon = respTitle.slice(6, tierLocation - 2);
 						let group = result.get(tier);
 						if (!group) group = [];
-						group.push(mon);
+						group.push(newMon);
 						result.set(tier, group);
 					}
 					if (i == data.length - 1) {
@@ -219,8 +268,10 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 					} else {
 						resolve(["none", messageData]);
 					}
+				} else {
+					i++;
+					pokeNavCheck(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
 				}
-				return;
 			});
 		});
 	});
@@ -232,7 +283,7 @@ function roleMake(input, message) {
     const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
 			for (const boss of tier[1]) {
-				const role = message.guild.roles.cache.find(r => r.name.toLowerCase() == boss.toLowerCase());
+				const role = message.guild.roles.cache.find(r => r.name == boss);
 				if (!role) {
 					console.log(`Creating role: ${boss}.`);
 					message.guild.roles.create({ name: boss }).then(() => {
@@ -246,6 +297,37 @@ function roleMake(input, message) {
 				} else {
 					console.log(`Role: ${boss} already exists.`);
 					pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then((msg) => {
+						msg.delete();
+						if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+							resolve();
+						}
+					});
+				}
+			}
+		}
+  });
+}
+
+function roleDelete(input, message) {
+	console.log("Deleteing roles & rules");
+	return new Promise((resolve) => {
+    const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
+		for (const tier of input){
+			for (const boss of tier[1]) {
+				const role = message.guild.roles.cache.find(r => r.name == boss);
+				if (role) {
+					console.log(`Deleting role: ${boss}.`);
+					message.guild.roles.delete(role).then(() => {
+						pokenavChannel.send(`<@428187007965986826> delete notify-rule ${boss}`).then((msg) => {
+							msg.delete();
+							if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+								resolve();
+							}
+						});
+					});
+				} else {
+					console.log(`Role: ${boss} didn't exist.`);
+					pokenavChannel.send(`<@428187007965986826> delete notify-rule ${boss}`).then((msg) => {
 						msg.delete();
 						if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
@@ -272,4 +354,8 @@ async function buttonInput(interaction){
 			return;
 		});
 	}
+}
+
+function hasDuplicates(array) {
+    return (new Set(array)).size !== array.length;
 }
