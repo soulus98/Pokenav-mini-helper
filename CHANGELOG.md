@@ -1,7 +1,9 @@
 # v1.3 (2022-Jul-07)
 * Made a raid announce channel category switcher for PokeNav
  * Use `arc` and `rrc` to link categories to announce channels, and when they reach **catLimit** channels, it will swap to another linked category, so long as that category has less than half of **catLimit** channels
-* Added `]notify`
+* Added `]notify`, to streamline raid notifications and remove the need for carl's rr module
+* Removed the verify responder, as that belongs in the main bot
+* Added **pokenavChannel** and **notifyReactionChannel** settings, for the above features
 
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:
