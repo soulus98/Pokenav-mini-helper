@@ -1,8 +1,7 @@
 const fs = require("fs"),
 			path = require("path"),
 			{ errorMessage } = require("../func/misc.js"),
-			Discord = require("discord.js"),
-			catLimit = 3;
+			Discord = require("discord.js");
 let list = new Discord.Collection();
 
 module.exports = {
@@ -15,12 +14,12 @@ module.exports = {
 		if (!raidAnnounceChannelId) return;
 		const pokenavChannel = await channel.guild.channels.fetch(ops.pokenavChannel);
 		const oldCategory = await channel.guild.channels.fetch(oldCategoryId);
-		if (oldCategory.children.size >= catLimit) {
+		if (oldCategory.children.size >= ops.catLimit) {
 			const group = list.get(raidAnnounceChannelId);
 			for (const c of group) {
 				const cat = await channel.guild.channels.fetch(c);
 				console.log(cat.children.size);
-				if (cat.children.size < catLimit / 2) {
+				if (cat.children.size < ops.catLimit / 2) {
 					return pokenavChannel.send(`<@428187007965986826> set raid-lobby-category ${raidAnnounceChannelId} ${cat.id}`);
 				}
 			}

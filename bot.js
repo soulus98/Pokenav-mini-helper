@@ -7,7 +7,7 @@ const { token } = require("./server/keys.json"),
 			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
 			{ checkCleanupList, loadCleanupList } = require("./func/filter.js"),
 			{ checkCategory, loadRaidCatList } = require("./func/switchCat.js"),
-			{ loadNotifyList } = require("./func/notify.js"),
+			{ loadNotifyList, deleteAndMakeMessages } = require("./func/notify.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
@@ -36,12 +36,13 @@ module.exports = { loadConfigs };
 async function load(){
 	console.log("======================================================================================\n");
 	console.log("Server starting...");
-		await loadConfigs();
-		await loadCommands();
-		await loadCleanupList();
-		await loadRaidCatList();
-		await loadNotifyList();
-		client.login(token);
+	await loadConfigs();
+	await loadCommands();
+	await loadCleanupList();
+	await loadRaidCatList();
+	await loadNotifyList();
+	console.log("Logging in...");
+	client.login(token);
 }
 // Loads (or re-loads) the bot settings
 function loadConfigs(){
@@ -92,6 +93,7 @@ load();
 
 client.once("ready", async () => {
 	server = await client.guilds.fetch(ops.serverID);
+	deleteAndMakeMessages(server);
 	const soul = await client.users.fetch(dev, false, true);
 	client.user.setActivity(`${ver}`);
 	if (server == undefined){
@@ -167,7 +169,7 @@ client.on("messageCreate", async (message) => {
 });
 
 client.on("interactionCreate", (interaction) => {
-	if (interaction.isButton()) handleButton(interaction);
+	if (interaction.isButton()) return handleButton(interaction);
 });
 
 process.on("uncaughtException", (err) => {
