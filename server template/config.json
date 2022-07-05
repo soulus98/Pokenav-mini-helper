@@ -4,5 +4,6 @@
 	"activity":"",
 	"modRole":"",
 	"pokenavChannel":"",
-	"notifyReactionChannel":""
+	"notifyReactionChannel":"",
+	"catLimit":45
 }
