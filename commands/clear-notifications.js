@@ -4,7 +4,7 @@ module.exports = {
 	name: "clear-notify",
 	description: "Clears bosses from the reaction system and deletes the roles.",
   aliases: ["cnotify", "cn"],
-  usage: `\`${ops.prefix}notify <boss(1)> [boss2] ...\``, // testo
+  usage: `\`${ops.prefix}clear-notify <boss(1)> [boss2] ...\` or \`${ops.prefix}clear-notify all\``, // testo
 	guildOnly:true,
 	args:true,
 	execute(message, args){

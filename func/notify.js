@@ -196,7 +196,6 @@ module.exports = {
 				notifyChannel.send({ components: rowArr, embeds: [embed] }).then(() => {
 					if (newList.lastKey() == key) {
 						list = newList;
-						console.log(list);
 						console.log("Updating saved list");
 						module.exports.saveNotifyList().then(() => {
 							return;
