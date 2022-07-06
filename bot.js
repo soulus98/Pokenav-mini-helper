@@ -7,7 +7,7 @@ const { token } = require("./server/keys.json"),
 			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
 			{ checkCleanupList, loadCleanupList } = require("./func/filter.js"),
 			{ checkCategory, loadRaidCatList } = require("./func/switchCat.js"),
-			{ loadNotifyList, deleteAndMakeMessages } = require("./func/notify.js"),
+			{ loadNotifyList, makeNotificationReactions } = require("./func/notify.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
@@ -93,7 +93,7 @@ load();
 
 client.once("ready", async () => {
 	server = await client.guilds.fetch(ops.serverID);
-	deleteAndMakeMessages(server);
+	makeNotificationReactions(server);
 	const soul = await client.users.fetch(dev, false, true);
 	client.user.setActivity(`${ver}`);
 	if (server == undefined){

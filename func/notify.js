@@ -7,46 +7,43 @@ let list = new Discord.Collection();
 
 
 module.exports = {
-	notify(message, args) {
-		return new Promise((resolve, reject) => {
-			if (hasDuplicates(args)) return reject(["dupe"]);
-			console.log(`[${dateToTime(new Date())}]Beginning notification workflow for: ${args.join(", ")}`);
-			argsCheck(args).then((checkedArgs) => {
-				if (!checkedArgs.length) return reject(["already"]);
-				const messageData = [];
-				const removedArgs = args.filter((v) => !checkedArgs.includes(v));
-				if (removedArgs.length) messageData.push(`The following bosses were found in the saved list: \`${removedArgs.join("`, `")}\``);
-				pokeNavCheck(checkedArgs, message).then(async ([result, md]) => {
-					for (const [k, v] of result) {
-						if (hasDuplicates(v)) return reject(["dupe", k]);
-					}
-					md.forEach((item) => messageData.push(item));
-					if (typeof result == "string") return reject([result, messageData]);
-					roleMake(result, message).then(async () => {
-						const newList = new Discord.Collection;
-						list.forEach((arr, key) => {
-							if (result.has(key)) {
-								const resultArr = result.get(key);
-								const newArr = arr.concat(resultArr).sort();
-								newList.set(key, newArr);
-							} else {
-								newList.set(key, arr);
-							}
-						});
-						result.forEach((arr, key) => {
-							if (!list.has(key)) {
-								newList.set(key, arr.sort());
-							}
-						});
-						module.exports.deleteAndMakeMessages(message, newList).then(() => {
-							message.reply(`Notifications added.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
-						}).catch((err) => {
-							message.reply(err);
-							console.error(err);
-						});
-					});
-				});
-			});
+	async notify(message, args) {
+		if (hasDuplicates(args)) throw ["dupe"];
+		console.log(`[${dateToTime(new Date())}]Beginning notification workflow for: ${args.join(", ")}`);
+		const checkedArgs = await argsCheck(args);
+		if (!checkedArgs.length) throw ["already"];
+		const messageData = [];
+		const removedArgs = args.filter((v) => !checkedArgs.includes(v));
+		if (removedArgs.length) messageData.push(`The following bosses were found in the saved list: \`${removedArgs.join("`, `")}\``);
+		const [result, md] = await pokeNavCheck(checkedArgs, message);
+		console.log(result);
+		md.forEach((item) => messageData.push(item));
+		if (typeof result == "string") throw [result, messageData];
+		for (const [k, v] of result) {
+			if (hasDuplicates(v.map(i => i.name))) throw ["dupe", k];
+		}
+		await makeRoles(result, message).catch(console.error);
+		await makeEmoji(result, message).catch(console.error);
+		const newList = new Discord.Collection;
+		list.forEach((arr, key) => {
+			if (result.has(key)) {
+				const resultArr = result.get(key);
+				const newArr = arr.concat(resultArr).sort((a, b) => a.name - b.name);
+				newList.set(key, newArr);
+			} else {
+				newList.set(key, arr);
+			}
+		});
+		result.forEach((arr, key) => {
+			if (!list.has(key)) {
+				newList.set(key, arr.sort((a, b) => a.name - b.name));
+			}
+		});
+		module.exports.makeNotificationReactions(message, newList).then(() => {
+			message.reply(`Notifications added.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+		}).catch((err) => {
+			message.reply(err);
+			console.error(err);
 		});
 	},
 	loadNotifyList() {
@@ -120,9 +117,10 @@ module.exports = {
 	clearNotify(message, args){
 		return new Promise((resolve, reject) => {
 			if (args[0].toLowerCase() == "all") {
-				roleDelete(list, message).then(() => {
+				deleteRoles(list, message).then(async () => {
+					await deleteEmoji(list, message);
 					list = new Discord.Collection();
-					module.exports.deleteAndMakeMessages(message, list).then(() => {
+					module.exports.deleteNotificationReactions(message, "all").then(() => {
 						message.reply("Notifications removed.");
 						resolve();
 					});
@@ -131,79 +129,92 @@ module.exports = {
 			}
 			if (hasDuplicates(args)) return reject(["dupe"]);
 			pokeNavCheck(args, message).then(async ([result, messageData]) => {
-				roleDelete(result, message).then(() => {
-					const newList = new Discord.Collection();
-					list.forEach((arr, k) => {
-						if (result.has(k)) {
-							const newArr = arr.filter((i) => !result.get(k).includes(i));
-							if (newArr.length) {
-								newList.set(k, newArr);
-							}
-						} else {
-							newList.set(k, arr);
-						}
-					});
-					module.exports.deleteAndMakeMessages(message, newList).then(() => {
-						message.reply(`Notifications removed.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
-					}).catch((err) => {
-						message.reply(err);
-						console.error(err);
-					});
+				await deleteRoles(result, message);
+				await deleteEmoji(result, message);
+				const newList = new Discord.Collection();
+				module.exports.deleteNotificationReactions(message, result).then(() => {
+					// list.forEach((arr, k) => {
+					// 	if (result.has(k)) {
+					// 		const newArr = arr.filter((i) => !result.get(k).includes(i));
+					// 		if (newArr.length) {
+					// 			newList.set(k, newArr);
+					// 		}
+					// 	} else {
+					// 		newList.set(k, arr);
+					// 	}
+					// });
+					// list = newList;
+					// console.log("Updating saved list");
+					// module.exports.saveNotifyList().then(() => {
+					// 	return;
+					// });
+					// message.reply(`Notifications removed.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+				}).catch((err) => {
+					message.reply(err);
+					console.error(err);
 				});
 			});
 		});
 	},
-	async deleteAndMakeMessages(input, newList) {
+	async makeNotificationReactions(input, newList){
 		let notifyChannel;
 		if (input instanceof Discord.Message) notifyChannel = await input.guild.channels.fetch(ops.notifyReactionChannel);
 		else if (input instanceof Discord.Guild) notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
 		else throw "Could not load new notification reaction message";
 		if (!newList) newList = list;
-		const existingButtons = await notifyChannel.messages.fetch({ limit: 6 }).then((ms) => ms.filter((msg) => !msg.pinned));
-		return notifyChannel.bulkDelete(existingButtons).then(() => {
-			if (newList.size == 0) {
-				console.log("Saving blank list");
-				module.exports.saveNotifyList();
-				return;
-			}
-			console.log("Constructing buttons");
-			newList.forEach(async (arr, key) => {
-				if (arr.length > 25) {
-					throw "I cannot currently process more than 25 bosses per tier. Please clear before trying again.";
+		const existingMessages = await notifyChannel.messages.fetch({ limit: 6 }).then((ms) => ms.filter((msg) => !msg.pinned));
+		if (newList.size == 0) {
+			notifyChannel.bulkDelete(existingMessages);
+			console.log("Saving blank list");
+			module.exports.saveNotifyList();
+			return;
+		}
+		const existingIds = new Discord.Collection;
+		existingMessages.forEach((item, k) => {
+			if (item.embeds[0]) existingIds.set(item.embeds[0].title, k);
+		});
+		console.log("Adding reactions");
+		newList.forEach(async (arr, tier) => {
+			if (existingIds.has(tier)) {
+				console.log(`Reacting to ${tier}`);
+				const message = await notifyChannel.messages.fetch(existingIds.get(tier));
+				for (const item of arr) {
+					message.react(item.identifier);
 				}
+			} else {
+				console.log(`Sending a new ${tier} message and reacting`);
 				const embed = new Discord.MessageEmbed()
-				.setTitle(key)
-				.setDescription(`Click on a ${key} to be notified when a new raid is posted.\nClick it again to remove the notification.`);
-				let buttonArr = [];
-				const rowArr = [];
-				for (const boss of arr) {
-					if (buttonArr.length == 5) {
-						rowArr.push(new Discord.MessageActionRow()
-						.addComponents(buttonArr));
-						buttonArr = [];
-					}
-					const button = new Discord.MessageButton()
-					.setCustomId(boss)
-					.setLabel(boss)
-					.setStyle("PRIMARY");
-					buttonArr.push(button);
-					if (arr.indexOf(boss) == arr.length - 1) {
-						rowArr.push(new Discord.MessageActionRow()
-						.addComponents(buttonArr));
-					}
-				}
-				console.log(`Sending ${key} button message`);
-				notifyChannel.send({ components: rowArr, embeds: [embed] }).then(() => {
-					if (newList.lastKey() == key) {
+				.setTitle(tier)
+				.setDescription(`Click on a ${tier} to be notified when a new raid is posted.\nClick it again to remove the notification.`);
+				const message = await notifyChannel.send({ embeds: [embed] });
+				for (const item of arr) {
+					message.react(item.identifier);
+					if (newList.lastKey() == tier && arr.indexOf(item) == arr.length - 1) {
 						list = newList;
 						console.log("Updating saved list");
 						module.exports.saveNotifyList().then(() => {
 							return;
 						});
 					}
-				});
+				}
+			}
+		});
+	},
+	async deleteNotificationReactions(message, inputList){
+		const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
+		const existingMessages = await notifyChannel.messages.fetch({ limit: 6 }).then((ms) => ms.filter((msg) => !msg.pinned));
+		const deleteNames = inputList.map(v => v).flat().map((i) => i.name);
+		for (const msg of existingMessages) {
+			const reactionsToDelete = msg.reactions.cache.filter((r) => deleteNames.includes(r.emoji.identifier));
+			reactionsToDelete.forEach(async(item) => {
+				item.remove();
+				if (reactionsToDelete.lastKey() == item) {
+					if (await msg.fetch().reactions.cache.size) {
+
+					}
+				}
 			});
-		}).catch((err) => console.error(err));
+		}
 	},
 };
 
@@ -231,8 +242,10 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 			};
 			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then((resp) => {
 				try {
-					const respTitle = resp.first().embeds[0].title;
+					const emb = resp.first().embeds[0];
+					const respTitle = emb.title;
 					pokenavChannel.bulkDelete(2).catch(() => console.error("Could not delete a message in the pokenavChannel"));
+					const eURL = emb.thumbnail?.url;
 					if (respTitle == "Error") {
 						console.log(`${mon} was not found by pokenav.`);
 						messageData.push(`PokeNav could not find \`${mon}\`. Please try again for that boss.`);
@@ -242,7 +255,7 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 						const newMon = respTitle.slice(6, tierLocation - 2);
 						let group = result.get(tier);
 						if (!group) group = [];
-						group.push(newMon);
+						group.push({ name: newMon, url: eURL });
 						result.set(tier, group);
 					}
 					if (i == data.length - 1) {
@@ -276,19 +289,20 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 	});
 }
 
-function roleMake(input, message) {
+function makeRoles(input, message) {
 	console.log("Making/checking roles & rules");
   return new Promise((resolve) => {
     const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
-			for (const boss of tier[1]) {
+			for (const bossItem of tier[1]) {
+				const boss = bossItem.name;
 				const role = message.guild.roles.cache.find(r => r.name == boss);
 				if (!role) {
 					console.log(`Creating role: ${boss}.`);
 					message.guild.roles.create({ name: boss }).then(() => {
 						pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then((msg) => {
 							msg.delete();
-							if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 								resolve();
 							}
 						});
@@ -297,7 +311,7 @@ function roleMake(input, message) {
 					console.log(`Role: ${boss} already exists.`);
 					pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then((msg) => {
 						msg.delete();
-						if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
 						}
 					});
@@ -307,35 +321,66 @@ function roleMake(input, message) {
   });
 }
 
-function roleDelete(input, message) {
+function deleteRoles(input, message) {
 	console.log("Deleteing roles & rules");
 	return new Promise((resolve) => {
-    const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
-			for (const boss of tier[1]) {
+			for (const bossItem of tier[1]) {
+				const boss = bossItem.name;
 				const role = message.guild.roles.cache.find(r => r.name == boss);
 				if (role) {
 					console.log(`Deleting role: ${boss}.`);
 					message.guild.roles.delete(role).then(() => {
-						pokenavChannel.send(`<@428187007965986826> delete notify-rule ${boss}`).then((msg) => {
-							msg.delete();
-							if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-								resolve();
-							}
-						});
-					});
-				} else {
-					console.log(`Role: ${boss} didn't exist.`);
-					pokenavChannel.send(`<@428187007965986826> delete notify-rule ${boss}`).then((msg) => {
-						msg.delete();
-						if (tier[1].indexOf(boss) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
 						}
 					});
+				} else {
+					console.log(`Role: ${boss} didn't exist.`);
+					if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+						resolve();
+					}
 				}
 			}
 		}
   });
+}
+
+async function makeEmoji(input, message) {
+	try {
+		const emojiServer = message.client.guilds.cache.get("994034906306969691");
+		for (const [k, v] of input) {
+			for (const item of v) {
+				const emoji = emojiServer.emojis.cache.find(e => e.name == item.name);
+				if (!emoji) {
+					console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
+					item.identifier = await emojiServer.emojis.create(item.url, item.name).then((e) => e.identifier).catch(err => console.error(`Cache failed when making an emoji for ${item.name}. It already existed`, err));
+					if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
+				} else {
+					console.log(`An Emoji named ${item.name} already existed on the emojiServer`);
+					item.identifier = emoji.identifier;
+					if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
+				}
+			}
+		}
+	} catch (e) {
+		console.error(e);
+	}
+}
+
+async function deleteEmoji(input, message) {
+	const emojiServer = message.client.guilds.cache.get("994034906306969691");
+	for (const [k, v] of input) {
+		for (const item of v) {
+			const allEmoji = await emojiServer.emojis.fetch();
+			const emoji = allEmoji.find((e) => e.name == item.name);
+			await emojiServer.emojis.delete(emoji).then(() => console.log(`Deleted Emoji ${item.name}`)).catch((e) => {
+				if (e.code == "INVALID_TYPE") console.error(`Emoji ${item.name} didn't exist`);
+				else console.error(e);
+			});
+			if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
+		}
+	}
 }
 
 async function buttonInput(interaction){
