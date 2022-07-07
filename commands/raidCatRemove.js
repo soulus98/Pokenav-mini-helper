@@ -8,7 +8,7 @@ module.exports = {
   usage: `\`${ops.prefix}rrc <category id>\``,
 	guildOnly:true,
 	args:true,
-	type:"Pokenav Cleanup",
+	type:"Raid Category",
 	execute(message, args) {
 		message.react("👀");
 		return new Promise(function(resolve) {
