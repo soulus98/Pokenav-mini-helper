@@ -93,7 +93,13 @@ function loadCommands(){
 load();
 
 client.once("ready", async () => {
-	server = await client.guilds.fetch(ops.serverID);
+	await client.guilds.fetch();
+	server = await client.guilds.cache.has(ops.serverID);
+	const emojiServer = await client.guilds.cache.has("994034906306969691");
+	if (!emojiServer) {
+		console.error("Please ask Soul to invite the bot to the Emoji server and give it the roles");
+		process.exit(1);
+	}
 	makeNotificationReactions(server);
 	const soul = await client.users.fetch(dev, false, true);
 	client.user.setActivity(`${ver}`);
