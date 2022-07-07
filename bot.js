@@ -7,13 +7,14 @@ const { token } = require("./server/keys.json"),
 			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
 			{ checkCleanupList, loadCleanupList } = require("./func/filter.js"),
 			{ checkCategory, loadRaidCatList } = require("./func/switchCat.js"),
-			{ loadNotifyList, makeNotificationReactions } = require("./func/notify.js"),
+			{ loadNotifyList, makeNotificationReactions, addReactionRole, removeReactionRole } = require("./func/notify.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
 	intents: [
 		Discord.Intents.FLAGS.GUILDS,
 		Discord.Intents.FLAGS.GUILD_MESSAGES,
+		Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
 	],
 	partials: [
 		"CHANNEL",
@@ -170,6 +171,16 @@ client.on("messageCreate", async (message) => {
 
 client.on("interactionCreate", (interaction) => {
 	if (interaction.isButton()) return handleButton(interaction);
+});
+
+client.on("messageReactionAdd", (messageReaction, user) => {
+	if (messageReaction.message.channel.id == ops.notifyReactionChannel) addReactionRole(messageReaction, user);
+	return;
+});
+
+client.on("messageReactionRemove", (messageReaction, user) => {
+	if (messageReaction.message.channel.id == ops.notifyReactionChannel) removeReactionRole(messageReaction, user);
+	return;
 });
 
 process.on("uncaughtException", (err) => {
