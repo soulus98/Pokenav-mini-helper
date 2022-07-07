@@ -93,7 +93,7 @@ load();
 
 client.once("ready", async () => {
 	server = await client.guilds.fetch(ops.serverID);
-	makeNotificationReactions(server);
+	if (ops.notifyReactionChannel) makeNotificationReactions(server);
 	const soul = await client.users.fetch(dev, false, true);
 	client.user.setActivity(`${ver}`);
 	if (server == undefined){

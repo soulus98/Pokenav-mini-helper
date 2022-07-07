@@ -9,6 +9,7 @@ module.exports = {
 	args:true,
 	execute(message, args){
 		return new Promise((resolve) => {
+			if (!ops.notifyReactionChannel) return resolve(", but notifyReactionChannel is blank");
 			clearNotify(message, args).then().catch(([err, messageData]) => {
 				/* if (err == "none") {
 					resolve(", but it failed, as all specified entries failed.");
