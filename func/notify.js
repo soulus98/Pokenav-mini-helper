@@ -123,8 +123,7 @@ module.exports = {
 				const role = server.roles.cache.find(r => r.name == reactionEmojiName);
 				if (role) {
 					console.log(`[${dateToTime(new Date())}] Adding role ${role.name} to ${user.username}${user}`);
-					member.roles.add(role.id).then((memb) => {
-					}).catch((e) => {
+					member.roles.add(role.id).catch((e) => {
 						console.error(`[${dateToTime(new Date())}] Could not add ${reactionEmojiName} to ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
@@ -213,7 +212,7 @@ module.exports = {
 		let notifyChannel;
 		if (input instanceof Discord.Message) notifyChannel = await input.guild.channels.fetch(ops.notifyReactionChannel);
 		else if (input instanceof Discord.Guild) notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
-		else throw "Could not load new notification reaction message";
+		else throw "Could not load notifyChannel";
 		if (!newList) newList = list;
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 6 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {

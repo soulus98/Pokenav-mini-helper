@@ -13,7 +13,7 @@ module.exports = {
 			replyNoMention(message, "Restarting...").then(() => {
 				resolve();
 				setTimeout(() => {
-					process.exit(0);
+					process.exit(1);
 				}, 10);
 			});
 		});

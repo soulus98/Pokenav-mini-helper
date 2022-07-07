@@ -12,7 +12,7 @@ module.exports = {
 			replyNoMention(message, "The bot is sleeping now. Goodbye :wave:").then(() => {
 				resolve();
 				setTimeout(() => {
-					process.exit(1);
+					process.exit(0);
 				}, 10);
 			});
 		});
