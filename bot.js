@@ -7,13 +7,14 @@ const { token } = require("./server/keys.json"),
 			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
 			{ checkCleanupList, loadCleanupList } = require("./func/filter.js"),
 			{ checkCategory, loadRaidCatList } = require("./func/switchCat.js"),
-			{ loadNotifyList, makeNotificationReactions } = require("./func/notify.js"),
+			{ loadNotifyList, makeNotificationReactions, addReactionRole, removeReactionRole } = require("./func/notify.js"),
 			ver = require("./package.json").version;
 
 const client = new Discord.Client({
 	intents: [
 		Discord.Intents.FLAGS.GUILDS,
 		Discord.Intents.FLAGS.GUILD_MESSAGES,
+		Discord.Intents.FLAGS.GUILD_MESSAGE_REACTIONS,
 	],
 	partials: [
 		"CHANNEL",
@@ -92,8 +93,15 @@ function loadCommands(){
 load();
 
 client.once("ready", async () => {
+	await client.guilds.fetch();
+	server = await client.guilds.cache.get(ops.serverID);
+	const emojiServer = await client.guilds.cache.has("994034906306969691");
+	if (!emojiServer) {
+		console.error("Please ask Soul to invite the bot to the Emoji server and give it the roles");
+		process.exit(0);
+	}
 	server = await client.guilds.fetch(ops.serverID);
-	if (ops.notifyReactionChannel) makeNotificationReactions(server);
+	if (ops.notifyReactionChannel) makeNotificationReactions(server).catch((err) => console.error(err));
 	const soul = await client.users.fetch(dev, false, true);
 	client.user.setActivity(`${ver}`);
 	if (server == undefined){
@@ -170,6 +178,16 @@ client.on("messageCreate", async (message) => {
 
 client.on("interactionCreate", (interaction) => {
 	if (interaction.isButton()) return handleButton(interaction);
+});
+
+client.on("messageReactionAdd", (messageReaction, user) => {
+	if (messageReaction.message.channel.id == ops.notifyReactionChannel) addReactionRole(messageReaction, user);
+	return;
+});
+
+client.on("messageReactionRemove", (messageReaction, user) => {
+	if (messageReaction.message.channel.id == ops.notifyReactionChannel) removeReactionRole(messageReaction, user);
+	return;
 });
 
 process.on("uncaughtException", (err) => {
