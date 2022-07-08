@@ -6,21 +6,27 @@ let list = new Discord.Collection();
 
 module.exports = {
   async checkCategory(channel){
+		console.log("list", list);
 		const oldCategoryId = channel.parentId;
-    const raidAnnounceChannelId = list.reduce((acc, group, k) => {
-			if (group.includes(oldCategoryId)) acc = k;
-			return acc;
-		}, false);
-		if (!raidAnnounceChannelId) return;
+    const raidAnnounceChannelArr = list.map((group, key) => {
+			if (group.includes(oldCategoryId)) return key;
+		});
+		console.log("raidAnnounceChannelArr:", raidAnnounceChannelArr);
+		if (!raidAnnounceChannelArr.length) return;
 		const pokenavChannel = await channel.guild.channels.fetch(ops.pokenavChannel);
 		const oldCategory = await channel.guild.channels.fetch(oldCategoryId);
 		if (oldCategory.children.size >= ops.catLimit) {
-			const group = list.get(raidAnnounceChannelId);
-			for (const c of group) {
-				const cat = await channel.guild.channels.fetch(c);
-				console.log(cat.children.size);
-				if (cat.children.size < ops.catLimit / 2) {
-					return pokenavChannel.send(`<@428187007965986826> set raid-lobby-category ${raidAnnounceChannelId} ${cat.id}`);
+			for (const raidAnnounceChannelId of raidAnnounceChannelArr) {
+				console.log("raidAnnounceChannelId", raidAnnounceChannelId);
+				const group = list.get(raidAnnounceChannelId);
+				console.log("group", group);
+				for (const c of group) {
+					console.log("c", c);
+					const cat = await channel.guild.channels.fetch(c);
+					console.log(cat.children.size);
+					if (cat.children.size < ops.catLimit / 2) {
+						pokenavChannel.send(`<@428187007965986826> set raid-lobby-category ${raidAnnounceChannelId} ${cat.id}`);
+					}
 				}
 			}
 		}
