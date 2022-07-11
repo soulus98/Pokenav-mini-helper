@@ -108,8 +108,8 @@ client.once("ready", async () => {
 		console.log("\nOops the screenshot server is broken.");
 		return;
 	}
-	const brokenChannel = client.channels.cache.get("982598490687410206")
-	console.log(brokenChannel);
+	const brokenChannelMsg = client.channels.cache.get("982598490687410206").lastMessage();
+	console.log(brokenChannelMsg);
 	const activeServers = client.guilds.cache;
 	const activeServerList = [];
 	activeServers.each(serv => activeServerList.push(`"${serv.name}" aka #${serv.id}`));
