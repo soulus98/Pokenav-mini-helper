@@ -104,35 +104,27 @@ module.exports = {
 			});
 		});
 	},
-	checkButtonInput(interaction){
-		return new Promise((resolve) => {
-			const val = interaction.customId;
-			if (list.some((arr) => arr.includes(val))) {
-				resolve(true);
-				buttonInput(interaction);
-			} else resolve(false);
-		});
-	},
 	async addReactionRole(messageReaction, user){
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const reactionEmojiName = messageReaction.emoji.name;
-			if (list.get(tier).map(i => i.name).includes(reactionEmojiName)) {
+			const emojiName = messageReaction.emoji.name;
+			const roleName = "Notify" + emojiName;
+			if (list.get(tier).map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
 				const member = await server.members.fetch(user.id);
-				const role = server.roles.cache.find(r => r.name == reactionEmojiName);
+				const role = server.roles.cache.find(r => r.name == roleName);
 				if (role) {
 					console.log(`[${dateToTime(new Date())}] Adding role ${role.name} to ${user.username}${user}`);
 					member.roles.add(role.id).catch((e) => {
-						console.error(`[${dateToTime(new Date())}] Could not add ${reactionEmojiName} to ${user.username}${user}. Error: ${e}`);
+						console.error(`[${dateToTime(new Date())}] Could not add ${roleName} to ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
 					messageReaction.message.channel.send(`<@${ops.modRole}> I could not find a role. Please tell Soul.`);
-					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${reactionEmojiName} role. Someone may have deleted it?`);
+					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
 				messageReaction.message.channel.send(`<@${ops.modRole}> An emoji was not found in the saved list. Please tell Soul.`);
-				console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${reactionEmojiName} in the list! An erroneous reaction?`);
+				console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
 			}
 		} catch (e) {
 			console.error(e);
@@ -141,23 +133,24 @@ module.exports = {
 	async removeReactionRole(messageReaction, user){
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const reactionEmojiName = messageReaction.emoji.name;
-			if (list.get(tier).map(i => i.name).includes(reactionEmojiName)) {
+			const emojiName = messageReaction.emoji.name;
+			const roleName = "Notify" + emojiName;
+			if (list.get(tier).map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
 				const member = await server.members.fetch(user.id);
-				const role = server.roles.cache.find(r => r.name == reactionEmojiName);
+				const role = server.roles.cache.find(r => r.name == roleName);
 				if (role) {
 					console.log(`[${dateToTime(new Date())}] Removing role ${role.name} from ${user.username}${user}`);
 					member.roles.remove(role.id).catch((e) => {
-						console.error(`[${dateToTime(new Date())}] Could not removing ${reactionEmojiName} from ${user.username}${user}. Error: ${e}`);
+						console.error(`[${dateToTime(new Date())}] Could not remove ${roleName} from ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
 					messageReaction.message.channel.send(`<@${ops.modRole}> I could not find a role. Please tell Soul.`);
-					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${reactionEmojiName} role. Someone may have deleted it?`);
+					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
 				messageReaction.message.channel.send(`<@${ops.modRole}> An emoji was not found in the saved list. Please tell Soul.`);
-				console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${reactionEmojiName} in the list! An erroneous reaction?`);
+				console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
 			}
 		} catch (e) {
 			console.error(e);
@@ -359,12 +352,13 @@ function makeRoles(input, message) {
     const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
-				const boss = bossItem.name;
-				const role = message.guild.roles.cache.find(r => r.name == boss);
+				const bossName = bossItem.name;
+				const roleName = "Notify" + bossName;
+				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (!role) {
-					console.log(`Creating role: ${boss}.`);
-					message.guild.roles.create({ name: boss }).then(() => {
-						pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then((msg) => {
+					console.log(`Creating role: ${roleName}.`);
+					message.guild.roles.create({ name: roleName }).then(() => {
+						pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
 							msg.delete();
 							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 								resolve();
@@ -372,8 +366,8 @@ function makeRoles(input, message) {
 						});
 					});
 				} else {
-					console.log(`Role: ${boss} already exists.`);
-					pokenavChannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss}"`).then((msg) => {
+					console.log(`Role: ${roleName} already exists.`);
+					pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
 						msg.delete();
 						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
@@ -390,17 +384,18 @@ function deleteRoles(input, message) {
 	return new Promise((resolve) => {
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
-				const boss = bossItem.name;
-				const role = message.guild.roles.cache.find(r => r.name == boss);
+				const bossName = bossItem.name;
+				const roleName = "Notify" + bossName;
+				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (role) {
-					console.log(`Deleting role: ${boss}.`);
+					console.log(`Deleting role: ${roleName}.`);
 					message.guild.roles.delete(role).then(() => {
 						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
 						}
 					});
 				} else {
-					console.log(`Role: ${boss} didn't exist.`);
+					console.log(`Role: ${roleName} didn't exist.`);
 					if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 						resolve();
 					}
@@ -445,23 +440,6 @@ async function deleteEmoji(input, message) {
 			});
 			if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
 		}
-	}
-}
-
-async function buttonInput(interaction){
-	const val = interaction.customId;
-	const member = await interaction.member.fetch();
-	const role = await interaction.guild.roles.fetch().then(roles => roles.find(r => r.name == val));
-	if (!member.roles.cache.has(role.id)) {
-		member.roles.add(role).then(() => {
-			interaction.reply({ content: `Notifications activated for: \`${val}\`.`, ephemeral:true });
-			return;
-		});
-	} else {
-		member.roles.remove(role).then(() => {
-			interaction.reply({ content: `Notifications **disabled** for: \`${val}\`.`, ephemeral:true });
-			return;
-		});
 	}
 }
 
