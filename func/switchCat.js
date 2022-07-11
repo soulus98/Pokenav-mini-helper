@@ -13,7 +13,7 @@ module.exports = {
 			if (group.includes(oldCategoryId)) return true;
 		});
 		console.log("filteredList", filteredList);
-		if (!filteredList.length) return;
+		if (!filteredList.size) return;
     const raidAnnounceChannelArr = filteredList.keys();
 		console.log("raidAnnounceChannelArr", raidAnnounceChannelArr);
 		const pokenavChannel = await channel.guild.channels.fetch(ops.pokenavChannel);
