@@ -8,7 +8,10 @@ module.exports = {
   async checkCategory(channel){
 		const oldCategoryId = channel.parentId;
 		console.log("oldCategoryId", oldCategoryId);
-		const filteredList = list.filter((group) => group.includes(oldCategoryId));
+		const filteredList = list.filter((group) => {
+			console.log("group", group);
+			if (group.includes(oldCategoryId)) return true;
+		});
 		console.log("filteredList", filteredList);
 		if (!filteredList.length) return;
     const raidAnnounceChannelArr = filteredList.keys();
