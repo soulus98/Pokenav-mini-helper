@@ -6,8 +6,8 @@ let list = new Discord.Collection();
 
 module.exports = {
   async checkCategory(channel){
-		console.log("oldCategoryId", oldCategoryId);
 		const oldCategoryId = channel.parentId;
+		console.log("oldCategoryId", oldCategoryId);
     const raidAnnounceChannelArr = list.map((group, key) => {
 			if (group.includes(oldCategoryId)) return key;
 		});
