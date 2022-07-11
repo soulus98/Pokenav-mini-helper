@@ -1,6 +1,6 @@
 const fs = require("fs"),
 			path = require("path"),
-			{ errorMessage } = require("../func/misc.js"),
+			{ errorMessage, dateToTime } = require("../func/misc.js"),
 			Discord = require("discord.js");
 let list = new Discord.Collection();
 
@@ -20,7 +20,7 @@ module.exports = {
 				for (const c of group) {
 					const cat = await channel.guild.channels.fetch(c);
 					if (cat.children.size < ops.catLimit / 2) {
-						console.log(`Swapping raid announce channel ${raidAnnounceChannelId} from ${oldCategory.name} to ${cat.name}`);
+						console.log(`[${dateToTime(new Date())}]: Swapping raid announce channel ${raidAnnounceChannelId} from ${oldCategory.name} to ${cat.name}`);
 						return pokenavChannel.send(`<@428187007965986826> set raid-lobby-category ${raidAnnounceChannelId} ${cat.id}`);
 					}
 				}
