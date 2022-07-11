@@ -6,6 +6,7 @@ let list = new Discord.Collection();
 
 module.exports = {
   async checkCategory(channel){
+		console.log("oldCategoryId", oldCategoryId);
 		const oldCategoryId = channel.parentId;
     const raidAnnounceChannelArr = list.map((group, key) => {
 			if (group.includes(oldCategoryId)) return key;
@@ -13,9 +14,12 @@ module.exports = {
 		if (!raidAnnounceChannelArr.length) return;
 		const pokenavChannel = await channel.guild.channels.fetch(ops.pokenavChannel);
 		const oldCategory = await channel.guild.channels.fetch(oldCategoryId);
+		console.log("oldCategory.id", oldCategory.id);
 		if (oldCategory.children.size >= ops.catLimit) {
 			for (const raidAnnounceChannelId of raidAnnounceChannelArr) {
+				console.log("raidAnnounceChannelId", raidAnnounceChannelId);
 				const group = list.get(raidAnnounceChannelId);
+				console.log("group", group);
 				for (const c of group) {
 					const cat = await channel.guild.channels.fetch(c);
 					if (cat.children.size < ops.catLimit / 2) {
