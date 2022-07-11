@@ -7,9 +7,8 @@ let list = new Discord.Collection();
 module.exports = {
   async checkCategory(channel){
 		const oldCategoryId = channel.parentId;
-    const raidAnnounceChannelArr = list.map((group, key) => {
-			if (group.includes(oldCategoryId)) return key;
-		});
+		const filteredList = list.filter((group) => group.includes(oldCategoryId));
+    const raidAnnounceChannelArr = filteredList.keys();
 		if (!raidAnnounceChannelArr.length) return;
 		const pokenavChannel = await channel.guild.channels.fetch(ops.pokenavChannel);
 		const oldCategory = await channel.guild.channels.fetch(oldCategoryId);
