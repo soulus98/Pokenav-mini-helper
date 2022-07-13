@@ -119,11 +119,11 @@ module.exports = {
 						console.error(`[${dateToTime(new Date())}] Could not add ${roleName} to ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
-					messageReaction.message.channel.send(`<@${ops.modRole}> I could not find a role. Please tell Soul.`);
+					messageReaction.message.channel.send(`<@&${ops.modRole}> I could not find a role. Please tell Soul.`);
 					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
-				messageReaction.message.channel.send(`<@${ops.modRole}> An emoji was not found in the saved list. Please tell Soul.`);
+				messageReaction.message.channel.send(`<@&${ops.modRole}> An emoji was not found in the saved list. Please tell Soul.`);
 				console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
 			}
 		} catch (e) {
@@ -188,6 +188,7 @@ module.exports = {
 							newList.set(tier, arr);
 						}
 					});
+					newList.sort(sortList);
 					list = newList;
 					console.log("Updating saved list");
 					module.exports.saveNotifyList().then(() => {
@@ -207,7 +208,7 @@ module.exports = {
 		else if (input instanceof Discord.Guild) notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
 		else throw "Could not load notifyChannel";
 		if (!newList) newList = list;
-		const existingMessages = await notifyChannel.messages.fetch({ limit: 6 }).then((ms) => ms.filter((msg) => !msg.pinned));
+		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
 			notifyChannel.bulkDelete(existingMessages);
 			console.log("Saving blank list");
@@ -218,39 +219,41 @@ module.exports = {
 		existingMessages.forEach((item, k) => {
 			if (item.embeds[0]) existingIds.set(item.embeds[0].title, k);
 		});
-		console.log("Adding reactions");
-		newList.forEach(async (arr, tier) => {
-			if (existingIds.has(tier)) {
-				console.log(`Reacting to ${tier} message`);
-				const message = await notifyChannel.messages.fetch(existingIds.get(tier));
-				for (const item of arr) {
-					message.react(item.identifier);
-					if (newList.lastKey() == tier && arr.indexOf(item) == arr.length - 1) {
-						list = newList;
-						console.log("Updating saved list");
-						module.exports.saveNotifyList().then(() => {
-							return;
-						});
-					}
-				}
+		console.log("Checking and adding reactions");
+		const lastKey = newList.lastKey();
+		for (const [tier, arr] of newList){
+			let message;
+			if (arr.length == 0) {
+				console.log(`Deleting ${tier} message`);
+				message = await notifyChannel.messages.fetch(existingIds.get(tier));
+				await message.delete();
+				newList.delete(tier);
+				if (lastKey == tier) saveList(newList);
 			} else {
-				console.log(`Sending a new ${tier} message and reacting`);
-				const embed = new Discord.MessageEmbed()
-				.setTitle(tier)
-				.setDescription(`Click on a ${tier} to be notified when a new raid is posted.\nClick it again to remove the notification.`);
-				const message = await notifyChannel.send({ embeds: [embed] });
+				if (existingIds.has(tier)) {
+					console.log(`Reacting to ${tier} message`);
+					message = await notifyChannel.messages.fetch(existingIds.get(tier));
+				} else {
+					console.log(`Sending a new ${tier} message and reacting`);
+					const embed = new Discord.MessageEmbed()
+					.setTitle(tier)
+					.setDescription(`Click on a ${tier} to be notified when a new raid is posted.\nClick it again to remove the notification.`);
+					message = await notifyChannel.send({ embeds: [embed] });
+				}
 				for (const item of arr) {
-					message.react(item.identifier);
-					if (newList.lastKey() == tier && arr.indexOf(item) == arr.length - 1) {
-						list = newList;
-						console.log("Updating saved list");
-						module.exports.saveNotifyList().then(() => {
-							return;
-						});
-					}
+					await message.react(item.identifier).catch((err) => {
+						if (err.code == "EMOJI_TYPE" || err.code == 10014) {
+							console.error(`Could not react with the ${item.identifier} emoji. Removing from saved list.`);
+							const newArr = [...arr];
+							newArr.splice(newArr.indexOf(item), 1);
+							if (newArr.length == 0) newList.delete(tier);
+							else newList.set(tier, newArr);
+						} else console.error(err);
+					});
+					if (lastKey == tier && arr.indexOf(item) == arr.length - 1) return saveList(newList);
 				}
 			}
-		});
+		}
 	},
 	async deleteNotificationReactions(message, inputList){
 		try {
@@ -443,6 +446,21 @@ async function deleteEmoji(input, message) {
 	}
 }
 
+function saveList(newList){
+	newList.sort(sortList);
+	list = newList;
+	console.log("Updating saved list");
+	module.exports.saveNotifyList().then(() => {
+		return;
+	});
+}
+
 function hasDuplicates(array) {
     return (new Set(array)).size !== array.length;
+}
+
+function sortList(v1, v2, k1, k2){
+	if (k1 > k2) return 1;
+	if (k1 < k2) return -1;
+	else return 0;
 }

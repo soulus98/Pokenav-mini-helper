@@ -181,11 +181,13 @@ client.on("interactionCreate", (interaction) => {
 });
 
 client.on("messageReactionAdd", (messageReaction, user) => {
+	if (user.bot) return;
 	if (messageReaction.message.channel.id == ops.notifyReactionChannel) addReactionRole(messageReaction, user);
 	return;
 });
 
 client.on("messageReactionRemove", (messageReaction, user) => {
+	if (user.bot) return;
 	if (messageReaction.message.channel.id == ops.notifyReactionChannel) removeReactionRole(messageReaction, user);
 	return;
 });
