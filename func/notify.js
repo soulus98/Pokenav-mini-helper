@@ -107,7 +107,7 @@ module.exports = {
 	async addReactionRole(messageReaction, user){
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const emojiName = messageReaction.emoji.name;
+			const emojiName = messageReaction.emoji.name.replace("_", "-");
 			const roleName = "Notify" + emojiName;
 			if (list.get(tier).map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
@@ -133,7 +133,7 @@ module.exports = {
 	async removeReactionRole(messageReaction, user){
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const emojiName = messageReaction.emoji.name;
+			const emojiName = messageReaction.emoji.name.replace("_", "-");
 			const roleName = "Notify" + emojiName;
 			if (list.get(tier).map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
