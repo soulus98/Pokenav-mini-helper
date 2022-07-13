@@ -8,7 +8,8 @@ const { token } = require("./server/keys.json"),
 			{ checkCleanupList, loadCleanupList } = require("./func/filter.js"),
 			{ checkCategory, loadRaidCatList } = require("./func/switchCat.js"),
 			{ loadNotifyList, makeNotificationReactions, addReactionRole, removeReactionRole } = require("./func/notify.js"),
-			ver = require("./package.json").version;
+			ver = require("./package.json").version,
+			act = require("./server/config.json").activity || ver;
 
 const client = new Discord.Client({
 	intents: [
@@ -22,7 +23,7 @@ const client = new Discord.Client({
 	presence: {
 		status: "online",
 		activities: [{
-			name: require("./server/config.json").activity || ver,
+			name: act,
 			type: "PLAYING",
 		}],
 	},
@@ -103,7 +104,7 @@ client.once("ready", async () => {
 	server = await client.guilds.fetch(ops.serverID);
 	if (ops.notifyReactionChannel) makeNotificationReactions(server).catch((err) => console.error(err));
 	const soul = await client.users.fetch(dev, false, true);
-	client.user.setActivity(`${ver}`);
+	client.user.setActivity(`${act}`);
 	if (server == undefined){
 		console.log("\nOops the screenshot server is broken.");
 		return;
@@ -125,7 +126,7 @@ client.on("shardError", (error) => {
 client.on("shardResume", () => {
 	if (loaded) {
 		console.error("Resumed! Refreshing Activity...");
-		client.user.setActivity(`${ver}`);
+		client.user.setActivity(`${act}`);
 	}
 });
 
@@ -136,7 +137,7 @@ client.on("shardDisconnect", () => {
 client.on("shardReady", () => {
 	if (loaded) {
 		console.error("Reconnected! Refreshing Activity...");
-		client.user.setActivity(`${ver}`);
+		client.user.setActivity(`${act}`);
 	}
 });
 
