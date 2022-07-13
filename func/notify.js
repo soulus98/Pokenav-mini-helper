@@ -2,7 +2,7 @@
 const Discord = require("discord.js"),
 			fs = require("fs"),
 			path = require("path"),
-			{ errorMessage, dateToTime } = require("../func/misc.js");
+			{ errorMessage, dateToTime, dev } = require("../func/misc.js");
 let list = new Discord.Collection();
 
 
@@ -210,7 +210,7 @@ module.exports = {
 		if (!newList) newList = list;
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
-			notifyChannel.bulkDelete(existingMessages);
+			notifyChannel.bulkDelete(existingMessages).catch(console.error);
 			console.log("Saving blank list");
 			module.exports.saveNotifyList();
 			return;
@@ -259,12 +259,13 @@ module.exports = {
 		try {
 			console.log("Deleting notifications");
 			const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
-			const existingMessages = await notifyChannel.messages.fetch({ limit: 6 }).then((ms) => ms.filter((msg) => !msg.pinned));
+			const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
+			if (inputList == "all") return notifyChannel.bulkDelete(existingMessages).catch(console.error);
 			const deleteNames = inputList.map(v => v).flat().map((i) => i.name);
 			for (const [k1, msg] of existingMessages) {
 				const reactionsToDelete = msg.reactions.cache.filter((r) => deleteNames.includes(r.emoji.name));
 				if (reactionsToDelete.size == msg.reactions.cache.size) {
-					msg.delete();
+					msg.delete().catch(console.error);
 				}	else {
 					for (const [k2, item] of reactionsToDelete) {
 						await item.remove();
@@ -414,10 +415,18 @@ async function makeEmoji(input, message) {
 		const allEmoji = await emojiServer.emojis.fetch(undefined, { force: true });
 		for (const [k, v] of input) {
 			for (const item of v) {
-				const emoji = allEmoji.find(e => e.name == item.name);
+				const emoji = allEmoji.find(e => e.name == item.name.replace("-", "_"));
 				if (!emoji) {
 					console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
-					item.identifier = await emojiServer.emojis.create(item.url, item.name).then((e) => e.identifier).catch(err => console.error(`Cache failed when making an emoji for ${item.name}. It already existed`, err));
+					item.identifier = await emojiServer.emojis.create(item.url, item.name.replace("-", "_")).then((e) => e.identifier).catch(err => {
+						if (err.code == 50035) {
+							console.error(`I could not create an emoji for ${item.name}. String validation regex. Tell Soul.`);
+							console.error(err);
+							message.reply(`String regex issue for ${item.name}. Please tell <@${dev}>`);
+							return;
+						}
+						console.error(`Cache may have fail when making an emoji for ${item.name}. It might have already existed`, err);
+					});
 					if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
 				} else {
 					console.log(`An Emoji named ${item.name} already existed on the emojiServer`);
@@ -436,7 +445,7 @@ async function deleteEmoji(input, message) {
 	for (const [k, v] of input) {
 		for (const item of v) {
 			const allEmoji = await emojiServer.emojis.fetch();
-			const emoji = allEmoji.find((e) => e.name == item.name);
+			const emoji = allEmoji.find((e) => e.name == item.name.replace("-", "_"));
 			await emojiServer.emojis.delete(emoji).then(() => console.log(`Deleted Emoji ${item.name}`)).catch((e) => {
 				if (e.code == "INVALID_TYPE") console.error(`Emoji ${item.name} didn't exist`);
 				else console.error(e);
