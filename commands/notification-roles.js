@@ -9,12 +9,8 @@ module.exports = {
 	args:true,
 	execute(message, args) {
 		return new Promise((resolve) => {
+			if (message.channelId != ops.pokenavChannel) return resolve(", but it wasn't sent in pokenavChannel");
 			if (!ops.notifyReactionChannel) return resolve(", but notifyReactionChannel is blank");
-			if (!ops.pokenavChannel) {
-				message.reply("Please set pokenavChannel in the config");
-				resolve(", but pokenavChannel is blank");
-				return;
-			}
 			notify(message, args).then().catch(([err, messageData]) => {
 				if (err == "none") {
 					resolve(", but it failed, as all specified entries failed.");
