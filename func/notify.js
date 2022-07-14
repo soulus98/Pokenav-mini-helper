@@ -142,15 +142,15 @@ module.exports = {
 				if (role) {
 					console.log(`[${dateToTime(new Date())}] Removing role ${role.name} from ${user.username}${user}`);
 					member.roles.remove(role.id).catch((e) => {
-						console.error(`[${dateToTime(new Date())}] Could not remove ${roleName} from ${user.username}${user}. Error: ${e}`);
+						console.error(`[${dateToTime(new Date())}]: Could not remove ${roleName} from ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
 					messageReaction.message.channel.send(`<@${ops.modRole}> I could not find a role. Please tell Soul.`);
-					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
+					console.error(`[${dateToTime(new Date())}]: An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
 				messageReaction.message.channel.send(`<@${ops.modRole}> An emoji was not found in the saved list. Please tell Soul.`);
-				console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
+				console.error(`[${dateToTime(new Date())}]: An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
 			}
 		} catch (e) {
 			console.error(e);
@@ -364,7 +364,7 @@ function makeRoles(input, message) {
 								resolve();
 							}
 						});
-					});
+					}).catch();
 				} else {
 					console.log(`Role: ${roleName} already exists.`);
 					pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
@@ -393,6 +393,14 @@ function deleteRoles(input, message) {
 						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
 						}
+					}).catch((err) => {
+						if (err.code == 500) {
+							console.error(`[${dateToTime(new Date())}]: Error: I could not delete the ${roleName} role. Timeout`);
+							message.reply(`I timed out after 3 tries on ${bossName}. Please try again for that boss.`);
+							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+								resolve();
+							}
+						} else console.error(err);
 					});
 				} else {
 					console.log(`Role: ${roleName} didn't exist.`);

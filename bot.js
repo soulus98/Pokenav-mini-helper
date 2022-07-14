@@ -27,6 +27,7 @@ const client = new Discord.Client({
 			type: "PLAYING",
 		}],
 	},
+	retryLimit: 3,
 }),
 launchDate = new Date();
 let loaded = false,
