@@ -27,7 +27,7 @@ const client = new Discord.Client({
 			type: "PLAYING",
 		}],
 	},
-	// retryLimit: 3,
+	restRequestTimeout: 30000,
 }),
 launchDate = new Date();
 let loaded = false,
