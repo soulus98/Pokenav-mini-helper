@@ -8,6 +8,11 @@
 #### v1.3.1 (2022-Jul-13)
 * Small bug fixes in `]notify`
 
+#### v1.3.2 (2022-Jul-1?)
+* More small bug fixes:
+ * Changed the default rest timeout to 60s from 15s
+ * Made ]n and ]cn only work in pokenavChannel
+
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:
  * Made the bot greedy, deleting *everything* that isn't a raid.
