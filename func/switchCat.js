@@ -2,11 +2,13 @@ const fs = require("fs"),
 			path = require("path"),
 			{ errorMessage, dateToTime } = require("../func/misc.js"),
 			Discord = require("discord.js");
-let list = new Discord.Collection();
+let list = new Discord.Collection(),
+		timedOut;
 
 module.exports = {
   async checkCategory(channel){
 		const oldCategoryId = channel.parentId;
+		if (oldCategoryId == timedOut) return;
 		const filteredList = list.filter((group) => {
 			if (group.includes(oldCategoryId)) return true;
 		});
@@ -23,6 +25,7 @@ module.exports = {
 					const cat = await channel.guild.channels.fetch(c);
 					if (cat.children.size < ops.catLimit / 2) {
 						console.log(`[${dateToTime(new Date())}]: Swapping raid announce channel ${raidAnnounceChannelId} from ${oldCategory.name} to ${cat.name}`);
+						timedOut = oldCategoryId;
 						pokenavChannel.send(`<@428187007965986826> set raid-lobby-category ${raidAnnounceChannelId} ${cat.id}`);
 						break;
 					}
