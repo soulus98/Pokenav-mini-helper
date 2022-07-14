@@ -17,7 +17,9 @@ module.exports = {
 		if (oldCategory.children.size >= ops.catLimit) {
 			for (const raidAnnounceChannelId of raidAnnounceChannelArr) {
 				const group = list.get(raidAnnounceChannelId);
-				for (const c of group) {
+				const pivot = group.indexOf(oldCategoryId) + 1;
+				const sortedGroup = [...group.slice(pivot), ...group.slice(0, pivot)];
+				for (const c of sortedGroup) {
 					const cat = await channel.guild.channels.fetch(c);
 					if (cat.children.size < ops.catLimit / 2) {
 						console.log(`[${dateToTime(new Date())}]: Swapping raid announce channel ${raidAnnounceChannelId} from ${oldCategory.name} to ${cat.name}`);

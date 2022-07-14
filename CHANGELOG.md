@@ -5,6 +5,9 @@
 * Removed the verify responder, as that belongs in the main bot
 * Added **pokenavChannel** and **notifyReactionChannel** settings, for the above features
 
+#### v1.3.1 (2022-Jul-13)
+* Small bug fixes in `]notify`
+
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:
  * Made the bot greedy, deleting *everything* that isn't a raid.

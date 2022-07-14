@@ -25,6 +25,10 @@ module.exports = {
 	cleanup(message, group) {
 		switch (group) { // Change "break" to "return" to case that case not to greedily delete
 			case "raid":
+				if (message.embeds[0]?.description?.startsWith("There are too many channels under the category")) {
+					message.channel.send(`<@&${ops.modRole}> Maximum channels reached in the category.\nTell the techs/admins that they need to link more categories.`);
+					return deleteMessage(message);
+				}
 				if (
 				message.embeds[0]?.title?.toLowerCase().includes("raid")
 				|| message.embeds[0]?.author?.name?.toLowerCase().includes("raid")
