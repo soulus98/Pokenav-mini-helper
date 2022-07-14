@@ -407,7 +407,7 @@ function deleteRoles(input, message) {
 							}
 						} else {
 							console.error(`Error deleting ${roleName}`);
-							console.error((Date.now() - startDeleteTime) * 1000, "seconds");
+							console.error((Date.now() - startDeleteTime) / 1000, "seconds");
 							console.error(role);
 							console.error(err);
 						}
