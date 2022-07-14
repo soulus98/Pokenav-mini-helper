@@ -393,6 +393,7 @@ function deleteRoles(input, message) {
 				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (role) {
 					console.log(`Deleting role: ${roleName}.`);
+					const startDeleteTime = Date.now();
 					message.guild.roles.delete(role).then(() => {
 						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
@@ -404,7 +405,12 @@ function deleteRoles(input, message) {
 							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 								resolve();
 							}
-						} else console.error(err);
+						} else {
+							console.error(`Error deleting ${roleName}`);
+							console.error((Date.now() - startDeleteTime) * 1000, "seconds");
+							console.error(role);
+							console.error(err);
+						}
 					});
 				} else {
 					console.log(`Role: ${roleName} didn't exist.`);
