@@ -3,7 +3,7 @@ const fs = require("fs"),
 			{ errorMessage, dateToTime } = require("../func/misc.js"),
 			Discord = require("discord.js");
 let list = new Discord.Collection(),
-		timedOut;
+		timedOut = false;
 
 module.exports = {
   async checkCategory(channel){
@@ -26,6 +26,9 @@ module.exports = {
 					if (cat.children.size < ops.catLimit / 2) {
 						console.log(`[${dateToTime(new Date())}]: Swapping raid announce channel ${raidAnnounceChannelId} from ${oldCategory.name} to ${cat.name}`);
 						timedOut = oldCategoryId;
+						setTimeout(() => {
+							timedOut = false;
+						}, 30000);
 						pokenavChannel.send(`<@428187007965986826> set raid-lobby-category ${raidAnnounceChannelId} ${cat.id}`);
 						break;
 					}
