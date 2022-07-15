@@ -56,8 +56,8 @@ module.exports = {
 		const tempItem = { name : newBoss, url: eURL };
 		if (emoji) tempItem.identifier = emoji;
 		const tempList = new Discord.Collection().set(tier, [tempItem]);
-		await makeRoles(tempList, message).catch(console.error);
-		if (!emoji) await makeEmoji(tempList, message).catch(console.error);
+		await makeRoles(tempList, message);
+		if (!emoji) await makeEmoji(tempList, message);
 		if (!list.get(tier)) list.set(tier, [tempItem]);
 		else {
 			const newArr = list.get(tier);
@@ -67,9 +67,6 @@ module.exports = {
 		}
 		module.exports.makeNotificationReactions(message, list).then(() => {
 			message.reply("Notifications added.");
-		}).catch((err) => {
-			message.reply(err);
-			console.error(err);
 		});
 	},
 	loadNotifyList() {
@@ -183,51 +180,70 @@ module.exports = {
 			console.error(e);
 		}
 	},
-	clearNotify(message, args){
+	async clearNotify(message, args){
 		console.log(`[${dateToTime(new Date())}]Clearing notification workflow for: ${args.join(", ")}`);
-		return new Promise((resolve, reject) => {
-			if (args[0].toLowerCase() == "all") {
-				deleteRoles(list, message).then(async () => {
-					await deleteEmoji(list, message);
-					list = new Discord.Collection();
-					module.exports.deleteNotificationReactions(message, "all").then(() => {
-						message.reply("Notifications removed.");
-						resolve();
-					});
-				});
-				return;
+		const newArgs = [...args];
+		if (args[0].toLowerCase() == "all") {
+			await deleteRoles(list, message);
+			await deleteEmoji(list, message);
+			list = new Discord.Collection();
+			await module.exports.deleteNotificationReactions(message, "all");
+			message.reply("Notifications removed.");
+			return;
+		}
+		if (hasDuplicates(args)) throw ["dupe"];
+		const tempList = new Discord.Collection();
+		for (const boss of args) {
+			const lcBoss = boss.toLowerCase();
+			for (const [tier, group] of list) {
+				const lcGroupNames = group.map(i => i.name).map(i => i.toLowerCase());
+				if (lcGroupNames.includes(lcBoss)) {
+					const realTierName = tier;
+					const realBoss = group[lcGroupNames.indexOf(lcBoss)];
+					const tempGroup = tempList.get(tier);
+					if (tempGroup) {
+						tempGroup.push(realBoss);
+						tempList.set(realTierName, tempGroup);
+					} else tempList.set(realTierName, [realBoss]);
+					newArgs.splice(newArgs.indexOf(boss), 1);
+				}
 			}
-			if (hasDuplicates(args)) return reject(["dupe"]);
-			pokeNavCheck(args, message).then(async ([result, messageData]) => {
-				await deleteRoles(result, message);
-				await deleteEmoji(result, message);
-				const newList = new Discord.Collection();
-				module.exports.deleteNotificationReactions(message, result).then(() => {
-					list.forEach((arr, tier) => {
-						if (result.has(tier)) {
-							const newArr = arr.filter((i) => !result.get(tier).map(i2 => i2.name).includes(i.name));
-							if (newArr.length) {
-								newList.set(tier, newArr);
-							} else {
-								newList.delete(tier);
-							}
-						} else {
-							newList.set(tier, arr);
-						}
-					});
-					newList.sort(sortList);
-					list = newList;
-					console.log("Updating saved list");
-					module.exports.saveNotifyList().then(() => {
-						return;
-					});
-					message.reply(`Notifications removed.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
-				}).catch((err) => {
-					message.reply(err);
-					console.error(err);
-				});
-			});
+		}
+		let result, messageData;
+		if (newArgs.length) [result, messageData] = await pokeNavCheck(newArgs, message);
+		if (result.size) {
+			for (const [tier, group] of result) {
+				const tempGroup = tempList.get(tier);
+				let newGroup = group;
+				if (tempGroup) newGroup = group.concat(tempGroup).sort((a, b) => a.name - b.name);
+				tempList.set(tier, newGroup);
+			}
+		}
+		result = tempList;
+		console.log("resultAfter", result);
+		await deleteRoles(result, message);
+		await deleteEmoji(result, message);
+		const newList = new Discord.Collection();
+		await module.exports.deleteNotificationReactions(message, result);
+		list.forEach((arr, tier) => {
+			if (result.has(tier)) {
+				const newArr = arr.filter((i) => !result.get(tier).map(i2 => i2.name).includes(i.name));
+				if (newArr.length) {
+					newList.set(tier, newArr);
+				} else {
+					newList.delete(tier);
+				}
+			} else {
+				newList.set(tier, arr);
+			}
 		});
+		newList.sort(sortList);
+		list = newList;
+		console.log("Updating saved list");
+		module.exports.saveNotifyList().then(() => {
+			return;
+		});
+		message.reply(`Notifications removed.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async makeNotificationReactions(input, newList){
 		let notifyChannel;
@@ -449,44 +465,42 @@ function makeRoles(input, message) {
   });
 }
 
-function deleteRoles(input, message) {
+async function deleteRoles(input, message) {
 	console.log("Deleteing roles & rules");
-	return new Promise((resolve) => {
-		for (const tier of input){
-			for (const bossItem of tier[1]) {
-				const bossName = bossItem.name;
-				const roleName = "Notify" + bossName;
-				const role = message.guild.roles.cache.find(r => r.name == roleName);
-				if (role) {
-					console.log(`Deleting role: ${roleName}.`);
-					const startDeleteTime = Date.now();
-					message.guild.roles.delete(role).then(() => {
-						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-							resolve();
-						}
-					}).catch((err) => {
-						if (err.code == 500) {
-							console.error(`[${dateToTime(new Date())}]: Error: I could not delete the ${roleName} role. Timeout`);
-							message.reply(`I timed out after 3 tries on ${bossName}. Please try again for that boss.`);
-							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-								resolve();
-							}
-						} else {
-							console.error(`Error deleting ${roleName}`);
-							console.error((Date.now() - startDeleteTime) / 1000, "seconds");
-							console.error(role);
-							console.error(err);
-						}
-					});
-				} else {
-					console.log(`Role: ${roleName} didn't exist.`);
+	for (const tier of input){
+		for (const bossItem of tier[1]) {
+			const bossName = bossItem.name;
+			const roleName = "Notify" + bossName;
+			const role = message.guild.roles.cache.find(r => r.name == roleName);
+			if (role) {
+				console.log(`Deleting role: ${roleName}.`);
+				const startDeleteTime = Date.now();
+				await message.guild.roles.delete(role).then(() => {
 					if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-						resolve();
+						return;
 					}
+				}).catch((err) => {
+					if (err.code == 500) {
+						console.error(`[${dateToTime(new Date())}]: Error: I could not delete the ${roleName} role. Timeout`);
+						message.reply(`I timed out after 3 tries on ${bossName}. Please try again for that boss.`);
+						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+							return;
+						}
+					} else {
+						console.error(`Error deleting ${roleName}`);
+						console.error((Date.now() - startDeleteTime) / 1000, "seconds");
+						console.error(role);
+						throw err;
+					}
+				});
+			} else {
+				console.log(`Role: ${roleName} didn't exist.`);
+				if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+					return;
 				}
 			}
 		}
-  });
+	}
 }
 
 async function makeEmoji(input, message) {
