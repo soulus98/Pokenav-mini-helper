@@ -8,10 +8,12 @@
 #### v1.3.1 (2022-Jul-13)
 * Small bug fixes in `]notify`
 
-#### v1.3.2 (2022-Jul-1?)
+#### v1.3.2 (2022-Jul-15)
+* Added `]override` for when the tier is unknown
 * More small bug fixes:
  * Changed the default rest timeout to 60s from 15s
  * Made ]n and ]cn only work in pokenavChannel
+ * Made things go in the right orders
 
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:
