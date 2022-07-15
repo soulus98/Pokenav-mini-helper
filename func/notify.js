@@ -45,6 +45,33 @@ module.exports = {
 			console.error(err);
 		});
 	},
+	async override(message, boss, tier, emoji) {
+		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${boss}`);
+		for (const item of list) {
+			if (item[1].includes(boss)) throw ["already"];
+		}
+		const res = await pokeNavOverrideCheck(boss, message);
+		if (!res) return;
+		const [newBoss, eURL] = res;
+		const tempItem = { name : newBoss, url: eURL };
+		if (emoji) tempItem.identifier = emoji;
+		const tempList = new Discord.Collection().set(tier, [tempItem]);
+		await makeRoles(tempList, message).catch(console.error);
+		if (!emoji) await makeEmoji(tempList, message).catch(console.error);
+		if (!list.get(tier)) list.set(tier, [tempItem]);
+		else {
+			const newArr = list.get(tier);
+			newArr.push(tempItem);
+			newArr.sort((a, b) => a.name - b.name);
+			list.set(tier, newArr);
+		}
+		module.exports.makeNotificationReactions(message, list).then(() => {
+			message.reply("Notifications added.");
+		}).catch((err) => {
+			message.reply(err);
+			console.error(err);
+		});
+	},
 	loadNotifyList() {
 		return new Promise(function(resolve, reject) {
 			new Promise((res) => {
@@ -107,7 +134,7 @@ module.exports = {
 	async addReactionRole(messageReaction, user){
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const emojiName = messageReaction.emoji.name.replace("_", "-");
+			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
 			const roleName = "Notify" + emojiName;
 			if (list.get(tier).map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
@@ -133,7 +160,7 @@ module.exports = {
 	async removeReactionRole(messageReaction, user){
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const emojiName = messageReaction.emoji.name.replace("_", "-");
+			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
 			const roleName = "Notify" + emojiName;
 			if (list.get(tier).map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
@@ -242,6 +269,9 @@ module.exports = {
 				}
 				for (const item of arr) {
 					await message.react(item.identifier).catch((err) => {
+						console.log("testo\n\n");
+						console.log(err, "\n");
+						console.log(err.code, "\n\n");
 						if (err.code == "EMOJI_TYPE" || err.code == 10014) {
 							console.error(`Could not react with the ${item.identifier} emoji. Removing from saved list.`);
 							const newArr = [...arr];
@@ -287,7 +317,6 @@ async function argsCheck(args) {
 		if (list.lastKey() == item[0]) return checkedArgs;
 	}
 }
-
 async function pokeNavCheck(data, message, messageData, i, result) {
 	if (!i) i = 0;
 	if (!result) result = new Discord.Collection;
@@ -301,7 +330,7 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 			const filter = m => {
 				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes("tier") || m.embeds[0]?.title.toLowerCase().includes("error"));
 			};
-			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then((resp) => {
+			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then(async (resp) => {
 				try {
 					const emb = resp.first().embeds[0];
 					const respTitle = emb.title;
@@ -309,25 +338,13 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 					const eURL = emb.thumbnail?.url;
 					if (respTitle == "Error") {
 						console.log(`${mon} was not found by pokenav.`);
-						messageData.push(`PokeNav could not find \`${mon}\`. Please try again for that boss.`);
+						messageData.push(`PokeNav could not find \`${mon}\`. Please try again for that boss or add manually using \`${ops.prefix}override\`.`);
+						pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
 					} else {
 						const tierLocation = respTitle.toLowerCase().indexOf("tier");
 						const tier = respTitle.slice(tierLocation, respTitle.length - 1);
 						const newMon = respTitle.slice(6, tierLocation - 2);
-						let group = result.get(tier);
-						if (!group) group = [];
-						group.push({ name: newMon, url: eURL });
-						result.set(tier, group);
-					}
-					if (i == data.length - 1) {
-						if (result.size > 0) {
-							resolve([result, messageData]);
-						} else {
-							resolve(["none", messageData]);
-						}
-					} else {
-						i++;
-						pokeNavCheck(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
+						pushCheckLoop(data, message, messageData, i, result, tier, newMon, eURL).then(([r, m]) => resolve([r, m]));
 					}
 				} catch (e) {
 					return console.error("An unexpected error in ]notify. error:", e);
@@ -335,19 +352,68 @@ async function pokeNavCheck(data, message, messageData, i, result) {
 			}).catch(() => {
 				console.log(`${mon} took more than 20 seconds for pokenav to find...?`);
 				messageData.push(`PokeNav did not respond quickly enough (or too quickly) for \`${mon}\`. Please try again for that boss.`);
-				if (data.indexOf(mon) == data.length - 1) {
-					if (result.size > 0) {
-						resolve([result, messageData]);
-					} else {
-						resolve(["none", messageData]);
-					}
-				} else {
-					i++;
-					pokeNavCheck(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
-				}
+				pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
 			});
 		});
 	});
+}
+
+async function pushCheckLoop(data, message, messageData, i, result, tier, newMon, eURL) {
+	if (tier) {
+		let group = result.get(tier);
+		if (!group) group = [];
+		group.push({ name: newMon, url: eURL });
+		result.set(tier, group);
+	}
+	if (i == data.length - 1) {
+		if (result.size > 0) {
+			return [result, messageData];
+		} else {
+			return ["none", messageData];
+		}
+	} else {
+		i++;
+		return await pokeNavCheck(data, message, messageData, i, result);
+	}
+}
+
+async function pokeNavOverrideCheck(boss, message) {
+	const pokenavChannel = await message.guild.channels.fetch(ops.pokenavChannel);
+	message.react("👀");
+	console.log(`Checking ${boss} counters for tier`);
+	await pokenavChannel.send(`<@428187007965986826> dex ${boss}`);
+	const filter = m => {
+		return m.author.id == 428187007965986826 && (m.embeds[0]?.thumbnail?.url.includes("pokenav.app") || m.embeds[0]?.title.toLowerCase().includes("error"));
+	};
+	let resp;
+	try {
+		resp = await pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] });
+	} catch {
+		console.log(`${boss} took more than 20 seconds for pokenav to find...?`);
+		message.reply(`PokeNav did not respond quickly enough (or too quickly) for \`${boss}\`. Please try again.`);
+		return false;
+	}
+	try {
+		const emb = resp.first().embeds[0];
+		const respTitle = emb.title;
+		pokenavChannel.bulkDelete(2).catch(() => console.error("Could not delete a message in the pokenavChannel"));
+		const eURL = emb.thumbnail?.url;
+		if (respTitle == "Error") {
+			console.log(`${boss} was not found by pokenav.`);
+			message.reply(`PokeNav could not find \`${boss}\`. Please try again for that boss.`);
+			return false;
+		} else {
+			let newMon;
+			if (respTitle.includes("✨")) {
+				newMon = respTitle.slice(6, -2);
+			} else {
+				newMon = respTitle.slice(6);
+			}
+			return [newMon, eURL];
+		}
+	} catch (e) {
+		return console.error("An unexpected error in ]notify. error:", e);
+	}
 }
 
 function makeRoles(input, message) {
@@ -429,17 +495,18 @@ async function makeEmoji(input, message) {
 		const allEmoji = await emojiServer.emojis.fetch(undefined, { force: true });
 		for (const [k, v] of input) {
 			for (const item of v) {
-				const emoji = allEmoji.find(e => e.name == item.name.replace("-", "_"));
+				const emojiName = item.name.replace(/-/g, "_");
+				const emoji = allEmoji.find(e => e.name == emojiName);
 				if (!emoji) {
-					console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
-					item.identifier = await emojiServer.emojis.create(item.url, item.name.replace("-", "_")).then((e) => e.identifier).catch(err => {
+					console.log(`Creating an Emoji named ${emojiName} on the emojiServer`);
+					item.identifier = await emojiServer.emojis.create(item.url, item.name.replace(/-/g, "_")).then((e) => e.identifier).catch(err => {
 						if (err.code == 50035) {
-							console.error(`I could not create an emoji for ${item.name}. String validation regex. Tell Soul.`);
+							console.error(`I could not create an emoji for ${emojiName}. String validation regex. Tell Soul.`);
 							console.error(err);
-							message.reply(`String regex issue for ${item.name}. Please tell <@${dev}>`);
+							message.reply(`String regex issue for ${emojiName}. Please tell <@${dev}>`);
 							return;
 						}
-						console.error(`Cache may have fail when making an emoji for ${item.name}. It might have already existed`, err);
+						console.error(`Cache may have fail when making an emoji for ${emojiName}. It might have already existed`, err);
 					});
 					if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
 				} else {
@@ -459,9 +526,10 @@ async function deleteEmoji(input, message) {
 	for (const [k, v] of input) {
 		for (const item of v) {
 			const allEmoji = await emojiServer.emojis.fetch();
-			const emoji = allEmoji.find((e) => e.name == item.name.replace("-", "_"));
-			await emojiServer.emojis.delete(emoji).then(() => console.log(`Deleted Emoji ${item.name}`)).catch((e) => {
-				if (e.code == "INVALID_TYPE") console.error(`Emoji ${item.name} didn't exist`);
+			const emojiName = item.name.replace(/-/g, "_");
+			const emoji = allEmoji.find((e) => e.name == emojiName);
+			await emojiServer.emojis.delete(emoji).then(() => console.log(`Deleted Emoji ${emojiName}`)).catch((e) => {
+				if (e.code == "INVALID_TYPE") console.error(`Error: could not delete emoji ${emojiName} as it didn't exist...?`);
 				else console.error(e);
 			});
 			if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
