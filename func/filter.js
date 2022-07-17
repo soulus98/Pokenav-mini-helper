@@ -23,7 +23,7 @@ module.exports = {
 		}
 	},
 	cleanup(message, group) {
-		switch (group) { // Change "break" to "return" to case that case not to greedily delete
+		switch (group) {
 			case "raid":
 				if (message.embeds[0]?.description?.startsWith("There are too many channels under the category")) {
 					message.channel.send(`<@&${ops.modRole}> Maximum channels reached in the category.\nTell the techs/admins that they need to link more categories.`);
@@ -38,6 +38,11 @@ module.exports = {
 				|| message.embeds[0]?.fields[1]?.name?.toLowerCase().includes("members")
 				) return;
 				return deleteMessage(message);
+			case "profile":
+				if (message.content.startsWith("You do not have permission to use")) {
+					return deleteMessage(message);
+				}
+				return;
 			case "badge":
 			setTimeout(() => {
 				message.fetch().then(m => {
