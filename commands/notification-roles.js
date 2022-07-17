@@ -22,6 +22,7 @@ module.exports = {
 					resolve(", but it failed, as duplicate entries were entered.");
 					return message.reply(`Error: Duplicate bosses were found${(messageData) ? ` in ${messageData}` : ""}.\nYou cannot specify duplicate bosses.`);
 				} else {
+					message.reply(err);
 					console.error(err);
 				}
 			});
