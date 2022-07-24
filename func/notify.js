@@ -446,7 +446,7 @@ function makeRoles(input, message) {
 				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (!role) {
 					console.log(`Creating role: ${roleName}.`);
-					message.guild.roles.create({ name: roleName }).then(() => {
+					message.guild.roles.create({ name: roleName, mentionable: false }).then(() => {
 						pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
 							msg.delete();
 							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
