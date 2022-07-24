@@ -11,13 +11,16 @@ module.exports = {
 		return new Promise((resolve) => {
 			if (message.channelId != ops.pokenavChannel) return resolve(", but it wasn't sent in pokenavChannel");
 			if (!ops.notifyReactionChannel) return resolve(", but notifyReactionChannel is blank");
-			clearNotify(message, args).catch(([err, messageData]) => {
-				if (err == "dupe") {
-					resolve(", but it failed, as duplicate entries were entered.");
-					return message.reply(`Error: Duplicate bosses were found${(messageData) ? ` in ${messageData}` : ""}.\nYou cannot specify duplicate bosses.`);
+			clearNotify(message, args).catch((e) => {
+				if (e.length == 2){
+					const [err, messageData] = e;
+					if (err == "dupe") {
+						resolve(", but it failed, as duplicate entries were entered.");
+						return message.reply(`Error: Duplicate bosses were found${(messageData) ? ` in ${messageData}` : ""}.\nYou cannot specify duplicate bosses.`);
+					} else console.error(err);
 				} else {
-					console.error(err);
-					message.reply(err);
+					console.error(e);
+					message.reply(e);
 				}
 			});
 		});
