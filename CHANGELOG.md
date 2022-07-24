@@ -15,6 +15,10 @@
  * Made ]n and ]cn only work in pokenavChannel
  * Made things go in the right orders
 
+#### v1.3.3 (2022-Jul-??)
+
+* Added a profile group for cleanup
+
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:
  * Made the bot greedy, deleting *everything* that isn't a raid.

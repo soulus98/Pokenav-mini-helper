@@ -133,6 +133,9 @@ module.exports = {
 			const tier = messageReaction.message.embeds[0]?.title;
 			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
 			const roleName = "Notify" + emojiName;
+			console.log(list);
+			console.log(tier);
+			console.log(list.get(tier));
 			if (list.get(tier).map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
 				const member = await server.members.fetch(user.id);
