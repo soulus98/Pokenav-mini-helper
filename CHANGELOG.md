@@ -15,8 +15,8 @@
  * Made ]n and ]cn only work in pokenavChannel
  * Made things go in the right orders
 
-#### v1.3.3 (2022-Jul-??)
-
+#### v1.3.3 (2022-Jul-25)
+* Small bug fixes in `]notify`
 * Added a profile group for cleanup
 
 # v1.2 (2022-Jun-06)
