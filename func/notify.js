@@ -134,7 +134,7 @@ module.exports = {
 			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
 			const roleName = "Notify" + emojiName;
 			const tierArr = list.get(tier);
-			if (!tierArr) return console.error(`I could not find the ${tier} tier in the list. Perhaps there are other message reactions in the channel`);
+			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
 			if (tierArr.map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
 				const member = await server.members.fetch(user.id);
@@ -161,7 +161,9 @@ module.exports = {
 			const tier = messageReaction.message.embeds[0]?.title;
 			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
 			const roleName = "Notify" + emojiName;
-			if (list.get(tier).map(i => i.name).includes(emojiName)) {
+			const tierArr = list.get(tier);
+			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
+			if (tierArr.map(i => i.name).includes(emojiName)) {
 				const server = messageReaction.message.guild;
 				const member = await server.members.fetch(user.id);
 				const role = server.roles.cache.find(r => r.name == roleName);
