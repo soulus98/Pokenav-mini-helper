@@ -215,7 +215,7 @@ module.exports = {
 		}
 		let result, messageData;
 		if (newArgs.length) [result, messageData] = await pokeNavCheck(newArgs, message);
-		if (result.size) {
+		if (result?.size) {
 			for (const [tier, group] of result) {
 				const tempGroup = tempList.get(tier);
 				let newGroup = group;
