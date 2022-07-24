@@ -39,7 +39,7 @@ module.exports = {
 			}
 		});
 		module.exports.makeNotificationReactions(message, newList).then(() => {
-			message.reply(`Notifications added.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+			message.reply(`Notifications added.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 		}).catch((err) => {
 			message.reply(err);
 			console.error(err);
@@ -224,7 +224,6 @@ module.exports = {
 			}
 		}
 		result = tempList;
-		console.log("resultAfter", result);
 		await deleteRoles(result, message);
 		await deleteEmoji(result, message);
 		const newList = new Discord.Collection();
@@ -247,7 +246,7 @@ module.exports = {
 		module.exports.saveNotifyList().then(() => {
 			return;
 		});
-		message.reply(`Notifications removed.${(messageData.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+		message.reply(`Notifications removed.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async makeNotificationReactions(input, newList){
 		let notifyChannel;
