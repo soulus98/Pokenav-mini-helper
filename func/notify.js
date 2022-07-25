@@ -227,6 +227,7 @@ module.exports = {
 		await deleteRoles(result, message);
 		await deleteEmoji(result, message);
 		const newList = new Discord.Collection();
+		console.log("result", result);
 		await module.exports.deleteNotificationReactions(message, result);
 		list.forEach((arr, tier) => {
 			if (result.has(tier)) {
