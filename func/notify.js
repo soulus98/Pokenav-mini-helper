@@ -227,7 +227,6 @@ module.exports = {
 		await deleteRoles(result, message);
 		await deleteEmoji(result, message);
 		const newList = new Discord.Collection();
-		console.log("result", result);
 		await module.exports.deleteNotificationReactions(message, result);
 		list.forEach((arr, tier) => {
 			if (result.has(tier)) {
@@ -311,13 +310,17 @@ module.exports = {
 			const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
 			const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 			if (inputList == "all") return notifyChannel.bulkDelete(existingMessages).catch(console.error);
-			const deleteNames = inputList.map(v => v).flat().map((i) => i.name);
+			const deleteNames = inputList.map(v => v).flat().map((i) => i.name.replace(/-/g, "_"));
 			for (const [k1, msg] of existingMessages) {
+				console.log("loop1", k1, msg.content);
+				console.log("d:", deleteNames);
 				const reactionsToDelete = msg.reactions.cache.filter((r) => deleteNames.includes(r.emoji.name));
+				console.log("r:", reactionsToDelete);
 				if (reactionsToDelete.size == msg.reactions.cache.size) {
 					msg.delete().catch(console.error);
 				}	else {
 					for (const [k2, item] of reactionsToDelete) {
+						console.log("loop2", k2, item.ident);
 						await item.remove();
 						if (reactionsToDelete.lastKey() == k2 && existingMessages.lastKey() == k1) return;
 					}
