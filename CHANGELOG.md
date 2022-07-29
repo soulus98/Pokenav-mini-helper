@@ -20,6 +20,7 @@
 * Added a profile group for cleanup
 
 #### v1.3.4 (2022-Jul-29)
+* Fixed ]rrc
 * Added a catch for when an emoji isn't available
 
 # v1.2 (2022-Jun-06)

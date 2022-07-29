@@ -522,7 +522,7 @@ async function makeEmoji(input, message) {
 				} else {
 					console.log(`Creating an Emoji named ${emojiName} on the emojiServer`);
 					const res = await emojiServer.emojis.create(item.url, item.name.replace(/-/g, "_")).then((e) => e.identifier).catch(err => err);
-					if (res.message.includes("image: Invalid image data")) {
+					if (res.message?.includes("image: Invalid image data")) {
 						console.log(`${item.name} thumbnail was not available as an emoji.`);
 						messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
 					} else if (res.code == 50035) {
