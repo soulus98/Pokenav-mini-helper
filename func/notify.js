@@ -22,7 +22,9 @@ module.exports = {
 			if (hasDuplicates(v.map(i => i.name))) throw ["dupe", k];
 		}
 		await makeRoles(result, message).catch(console.error);
-		await makeEmoji(result, message).catch(console.error);
+		const md2 = await makeEmoji(result, message).catch(console.error);
+		md2.forEach((item) => messageData.push(item));
+		if (messageData.length == args.length) throw ["none", messageData];
 		const newList = new Discord.Collection;
 		list.forEach((arr, key) => {
 			if (result.has(key)) {
@@ -506,6 +508,7 @@ async function deleteRoles(input, message) {
 }
 
 async function makeEmoji(input, message) {
+	const messageData = [];
 	try {
 		const emojiServer = await message.client.guilds.cache.get("994034906306969691");
 		const allEmoji = await emojiServer.emojis.fetch(undefined, { force: true });
@@ -513,23 +516,26 @@ async function makeEmoji(input, message) {
 			for (const item of v) {
 				const emojiName = item.name.replace(/-/g, "_");
 				const emoji = allEmoji.find(e => e.name == emojiName);
-				if (!emoji) {
-					console.log(`Creating an Emoji named ${emojiName} on the emojiServer`);
-					item.identifier = await emojiServer.emojis.create(item.url, item.name.replace(/-/g, "_")).then((e) => e.identifier).catch(err => {
-						if (err.code == 50035) {
-							console.error(`I could not create an emoji for ${emojiName}. String validation regex. Tell Soul.`);
-							console.error(err);
-							message.reply(`String regex issue for ${emojiName}. Please tell <@${dev}>`);
-							return;
-						}
-						console.error(`Cache may have fail when making an emoji for ${emojiName}. It might have already existed`, err);
-					});
-					if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
-				} else {
+				if (emoji) {
 					console.log(`An Emoji named ${item.name} already existed on the emojiServer`);
 					item.identifier = emoji.identifier;
-					if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
+				} else {
+					console.log(`Creating an Emoji named ${emojiName} on the emojiServer`);
+					const res = await emojiServer.emojis.create(item.url, item.name.replace(/-/g, "_")).then((e) => e.identifier).catch(err => err);
+					if (res.message.includes("image: Invalid image data")) {
+						console.log(`${item.name} thumbnail was not available as an emoji.`);
+						messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
+					} else if (res.code == 50035) {
+						console.error(`I could not create an emoji for ${emojiName}. String validation regex. Tell Soul.`);
+						console.error(res);
+						messageData.push(`String regex issue for ${emojiName}. Please tell <@${dev}>`);
+					} else if (res.code) {
+						console.error(`Cache may have fail when making an emoji for ${emojiName}. It might have already existed...?`, res);
+					} else {
+						item.identifier = res;
+					}
 				}
+				if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
 			}
 		}
 	} catch (e) {

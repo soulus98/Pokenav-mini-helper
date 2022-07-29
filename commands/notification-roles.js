@@ -11,19 +11,22 @@ module.exports = {
 		return new Promise((resolve) => {
 			if (message.channelId != ops.pokenavChannel) return resolve(", but it wasn't sent in pokenavChannel");
 			if (!ops.notifyReactionChannel) return resolve(", but notifyReactionChannel is blank");
-			notify(message, args).then().catch(([err, messageData]) => {
-				if (err == "none") {
-					resolve(", but it failed, as all specified entries failed.");
-					return message.reply(`Errors:\n• ${messageData.join("\n• ")}\n\nAll bosses entered had errors.\nNothing has been processed.`);
-				} else if (err == "already") {
-					resolve(", but it failed, as all specified entries were already in the notifyList.");
-					return message.reply("Error: All of those bosses were found in the saved list.\nNothing has been processed.");
-				} else if (err == "dupe") {
-					resolve(", but it failed, as duplicate entries were entered.");
-					return message.reply(`Error: Duplicate bosses were found${(messageData) ? ` in ${messageData}` : ""}.\nYou cannot specify duplicate bosses.`);
+			notify(message, args).then().catch((e) => {
+				if (e.length == 2) {
+					const [err, messageData] = e;
+					if (err == "none") {
+						resolve(", but it failed, as all specified entries failed.");
+						return message.reply(`Errors:\n• ${messageData.join("\n• ")}\n\nAll bosses entered had errors.\nNothing has been processed.`);
+					} else if (err == "already") {
+						resolve(", but it failed, as all specified entries were already in the notifyList.");
+						return message.reply("Error: All of those bosses were found in the saved list.\nNothing has been processed.");
+					} else if (err == "dupe") {
+						resolve(", but it failed, as duplicate entries were entered.");
+						return message.reply(`Error: Duplicate bosses were found${(messageData) ? ` in ${messageData}` : ""}.\nYou cannot specify duplicate bosses.`);
+					}
 				} else {
-					message.reply(err);
-					console.error(err);
+					message.reply(e);
+					console.error(e);
 				}
 			});
 		});
