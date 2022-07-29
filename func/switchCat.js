@@ -50,22 +50,12 @@ module.exports = {
       });
     });
   },
-  removeRaidCat(id) {
-    return new Promise((resolve, reject) => {
-			const removed = [];
-      for (const item of list) {
-				const group = item[1];
-				if (group.includes(id)) {
-					removed.push(item[0]);
-					group.splice(group.indexOf(id));
-          list.set(item[0], group);
-        }
-			}
-			if (removed.length == 0) return reject();
-      module.exports.saveRaidCatList().then(() => {
-        resolve(removed);
-      });
-    });
+  async removeRaidCat(id) {
+			if (list.get(id)) {
+				list.delete(id);
+				await module.exports.saveRaidCatList();
+				return;
+			} else throw "not";
   },
   loadRaidCatList() {
     return new Promise(function(resolve, reject) {
