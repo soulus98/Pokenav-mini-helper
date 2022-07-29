@@ -19,6 +19,9 @@
 * Small bug fixes in `]notify`
 * Added a profile group for cleanup
 
+#### v1.3.4 (2022-Jul-29)
+* Added a catch for when an emoji isn't available
+
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:
  * Made the bot greedy, deleting *everything* that isn't a raid.
