@@ -4,15 +4,15 @@ const fs = require("fs"),
 			Discord = require("discord.js");
 let list = new Discord.Collection();
 function deleteMessage(message) {
-	message.delete().catch(() => console.error(`Can not cleanup pokenav message:${message.id} from channel: ${message.channel.name}${message.channel}.`));
+	message.delete().catch(() => console.error(`Can not cleanup message:${message.id} from channel: ${message.channel.name}${message.channel}.\n Message content: ${message.content}`));
 }
 module.exports = {
 	async checkCleanupList(message) {
-		// if (message.member.roles.cache.has(ops.modRole)
-		// 	|| message.member.permissions.has("ADMINISTRATOR")
-		// 	|| message.author.id == dev
-		// 	|| (message.author.bot && message.author.id != "428187007965986826")
-		// ) return;
+		if (message.member.roles.cache.has(ops.modRole)
+			|| message.member.permissions.has("ADMINISTRATOR")
+			|| message.author.id == dev
+			|| (message.author.bot && message.author.id != "428187007965986826")
+		) return;
 		if (message.author.bot && message.author.id != "428187007965986826") return;
 		for (const g of list) {
 			if (!g[1].includes(message.channel.id)) {
