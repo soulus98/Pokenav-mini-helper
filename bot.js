@@ -118,39 +118,8 @@ client.once("ready", async () => {
 	console.log(`\nActive in:\n${activeServerList.join("\n")}`);
 	console.log(`\nServer started at: ${launchDate.toLocaleString()}. Loaded in guild: "${server.name}"#${server.id}`);
 	console.log("\n======================================================================================\n");
-});
-
-client.on("shardError", (error) => {
-	console.error(`[${dateToTime(new Date())}]: Websocket disconnect: ${error}`);
-});
-
-client.on("shardResume", () => {
-	if (loaded) {
-		console.error("Resumed! Refreshing Activity...");
-		client.user.setActivity(`${act}`);
-	}
-});
-
-client.on("shardDisconnect", () => {
-	console.error("Disconnected!");
-});
-
-client.on("shardReady", () => {
-	if (loaded) {
-		console.error("Reconnected! Refreshing Activity...");
-		client.user.setActivity(`${act}`);
-	}
-});
-
-client.on("shardReconnecting", () => {
-	console.error("Reconnecting...");
-});
-
-client.on("channelCreate", async (channel) => {
-	await checkCategory(channel);
-});
-
-client.on("messageCreate", async (message) => {
+})
+.on("messageCreate", async (message) => {
 	await checkCleanupList(message);
 	if (message.author.bot && message.author.id != "155149108183695360") return; // Bot? Cancel
 	const postedTime = new Date();
@@ -176,32 +145,53 @@ client.on("messageCreate", async (message) => {
 	 	message.reply("<@428187007965986826> end");
 	 	return;
 	}*/ else if (message.guild == server) handleCommand(message, postedTime); // command handler
-});
-
-client.on("interactionCreate", (interaction) => {
+})
+.on("interactionCreate", (interaction) => {
 	if (interaction.isButton()) return handleButton(interaction);
-});
-
-client.on("messageReactionAdd", (messageReaction, user) => {
+})
+.on("messageReactionAdd", (messageReaction, user) => {
 	if (user.bot) return;
 	if (messageReaction.message.channel.id == ops.notifyReactionChannel) addReactionRole(messageReaction, user);
 	return;
-});
-
-client.on("messageReactionRemove", (messageReaction, user) => {
+})
+.on("messageReactionRemove", (messageReaction, user) => {
 	if (user.bot) return;
 	if (messageReaction.message.channel.id == ops.notifyReactionChannel) removeReactionRole(messageReaction, user);
 	return;
+})
+.on("shardError", (error) => {
+	console.error(`[${dateToTime(new Date())}]: Websocket disconnect: ${error}`);
+})
+.on("shardResume", () => {
+	if (loaded) {
+		console.error("Resumed! Refreshing Activity...");
+		client.user.setActivity(`${act}`);
+	}
+})
+.on("shardDisconnect", () => {
+	console.error("Disconnected!");
+})
+.on("shardReady", () => {
+	if (loaded) {
+		console.error("Reconnected! Refreshing Activity...");
+		client.user.setActivity(`${act}`);
+	}
+})
+.on("shardReconnecting", () => {
+	console.error("Reconnecting...");
+})
+.on("channelCreate", async (channel) => {
+	await checkCategory(channel);
 });
+
+
 
 process.on("uncaughtException", (err) => {
 	errorMessage(new Date(), false, `Uncaught Exception: ${err}`);
-});
-
-process.on("unhandledRejection", (err, promise) => {
+})
+.on("unhandledRejection", (err, promise) => {
 	console.error(`[${dateToTime(new Date())}]: Unhandled rejection at `, promise, `reason: ${err}`);
-});
-
-process.on("SIGINT", () => {
+})
+.on("SIGINT", () => {
   console.log(`Process ${process.pid} has been interrupted`);
 });

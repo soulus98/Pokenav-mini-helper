@@ -20,8 +20,12 @@
 * Added a profile group for cleanup
 
 #### v1.3.4 (2022-Jul-29)
-* Fixed ]rrc
+* Fixed `]rrc`
 * Added a catch for when an emoji isn't available
+
+#### v1.3.5 (2022-Aug-01)
+* Added a `$r` autoresponder
+* Added color and bold to the notification embeds
 
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:

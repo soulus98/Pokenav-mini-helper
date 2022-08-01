@@ -285,7 +285,8 @@ module.exports = {
 					console.log(`Sending a new ${tier} message and reacting`);
 					const embed = new Discord.MessageEmbed()
 					.setTitle(tier)
-					.setDescription(`Click on a ${tier} to be notified when a new raid is posted.\nClick it again to remove the notification.`);
+					.setDescription(`Click on a **${tier}** to be notified when a new raid is posted.\nClick it again to remove the notification.`)
+					.setColor(0xFF00FF);
 					message = await notifyChannel.send({ embeds: [embed] });
 				}
 				for (const item of arr) {

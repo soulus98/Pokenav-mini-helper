@@ -1,6 +1,6 @@
 const fs = require("fs"),
 			path = require("path"),
-			{ errorMessage, groupList } = require("../func/misc.js"),
+			{ errorMessage, groupList, dev } = require("../func/misc.js"),
 			Discord = require("discord.js");
 let list = new Discord.Collection();
 function deleteMessage(message) {
@@ -8,21 +8,24 @@ function deleteMessage(message) {
 }
 module.exports = {
 	async checkCleanupList(message) {
-		if (message.author.id != 428187007965986826) return; // pokenav message filtering
-		const filtered = [];
+		// if (message.member.roles.cache.has(ops.modRole)
+		// 	|| message.member.permissions.has("ADMINISTRATOR")
+		// 	|| message.author.id == dev
+		// 	|| (message.author.bot && message.author.id != "428187007965986826")
+		// ) return;
+		if (message.author.bot && message.author.id != "428187007965986826") return;
 		for (const g of list) {
-			if (g[1].includes(message.channel.id)) {
-				module.exports.cleanup(message, g[0]);
-				filtered.push(true);
-			} else {
-				filtered.push(false);
+			if (!g[1].includes(message.channel.id)) {
+				if (g[0] == list.lastKey()) {
+					return;
+				}
+				continue;
 			}
-			if (filtered.length == list.size) {
-				return;
-			}
+			if (message.author.id == "428187007965986826") module.exports.pokeNavCleanup(message, g[0]); // pokenav message filtering
+			else module.exports.cleanup(message, g[0]);
 		}
 	},
-	cleanup(message, group) {
+	pokeNavCleanup(message, group) {
 		switch (group) {
 			case "raid":
 				if (message.embeds[0]?.description?.startsWith("There are too many channels under the category")) {
@@ -90,6 +93,20 @@ module.exports = {
 			default:
 				message.reply("Please tell soul(<@146186496448135168>) an impossible error occured involving the cleanup switch.");
 				console.error(`[${new Date()}]: Error: An impossible error occured involving the cleanup switch.`);
+				return;
+		}
+	},
+	async cleanup(message, group){
+		switch (group) {
+			case "raid":
+				if (message.content.startsWith("$r")) {
+					const m = await message.channel.send(`${message.member}, \`$r\` and \`$raid\` have been replaced with \`/raid\`\nSee <#${ops.howToChannel}> for instructions`);
+					setTimeout(() => {
+						m.delete();
+					}, 6000);
+				}
+				return deleteMessage(message);
+			default:
 				return;
 		}
 	},
