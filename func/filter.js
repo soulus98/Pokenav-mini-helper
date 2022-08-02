@@ -9,7 +9,7 @@ function deleteMessage(message) {
 module.exports = {
 	async checkCleanupList(message) {
 		if (message.member == null) {
-			return console.error(message);
+			return console.error("weird member null error", message);
 		}
 		if (message.channel.type == "DM"
 			|| message.member.roles.cache.has(ops.modRole)
