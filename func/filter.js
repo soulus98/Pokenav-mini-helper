@@ -8,14 +8,12 @@ function deleteMessage(message) {
 }
 module.exports = {
 	async checkCleanupList(message) {
-		if (message.member == null) {
-			return console.error("weird member null error", message);
-		}
 		if (message.channel.type == "DM"
+		  || (message.author.bot && message.author.id != "428187007965986826"
 			|| message.member.roles.cache.has(ops.modRole)
 			|| message.member.permissions.has("ADMINISTRATOR")
 			|| message.author.id == dev
-			|| (message.author.bot && message.author.id != "428187007965986826")
+			)
 		) return;
 		if (message.author.bot && message.author.id != "428187007965986826") return;
 		for (const g of list) {
