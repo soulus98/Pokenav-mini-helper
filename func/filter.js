@@ -8,7 +8,11 @@ function deleteMessage(message) {
 }
 module.exports = {
 	async checkCleanupList(message) {
-		if (message.member.roles.cache.has(ops.modRole)
+		if (message.member == null) {
+			return console.error(message);
+		}
+		if (message.channel.type == "DM"
+			|| message.member.roles.cache.has(ops.modRole)
 			|| message.member.permissions.has("ADMINISTRATOR")
 			|| message.author.id == dev
 			|| (message.author.bot && message.author.id != "428187007965986826")
