@@ -27,6 +27,12 @@
 * Added a `$r` autoresponder
 * Added color and bold to the notification embeds
 
+#### v1.3.6 (2022-Aug-03)
+* Fixed the autoresponder
+* Split `]list` into `]list categories`, `]list cleanup`, and `]list notifications`
+* Added :eyes: in ]n and ]cn
+* Channel link in ]n updated message
+
 # v1.2 (2022-Jun-06)
 * Updated to where the main bot's cleanup process was at:
  * Made the bot greedy, deleting *everything* that isn't a raid.

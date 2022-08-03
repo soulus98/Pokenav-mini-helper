@@ -15,6 +15,7 @@ module.exports = {
 		const messageData = [];
 		const removedArgs = args.filter((v) => !checkedArgs.includes(v));
 		if (removedArgs.length) messageData.push(`The following bosses were found in the saved list: \`${removedArgs.join("`, `")}\``);
+		message.react("👀");
 		const [result, md] = await pokeNavCheck(checkedArgs, message);
 		md.forEach((item) => messageData.push(item));
 		if (typeof result == "string") throw [result, messageData];
@@ -41,7 +42,7 @@ module.exports = {
 			}
 		});
 		module.exports.makeNotificationReactions(message, newList).then(() => {
-			message.reply(`Notifications added.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+			message.reply(`Notifications added.\n<#${ops.notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 		}).catch((err) => {
 			message.reply(err);
 			console.error(err);
@@ -52,6 +53,7 @@ module.exports = {
 		for (const item of list) {
 			if (item[1].includes(boss)) throw ["already"];
 		}
+		message.react("👀");
 		const res = await pokeNavOverrideCheck(boss, message);
 		if (!res) return;
 		const [newBoss, eURL] = res;
@@ -189,6 +191,7 @@ module.exports = {
 	async clearNotify(message, args){
 		console.log(`[${dateToTime(new Date())}]Clearing notification workflow for: ${args.join(", ")}`);
 		const newArgs = [...args];
+		message.react("👀");
 		if (args[0].toLowerCase() == "all") {
 			await deleteRoles(list, message);
 			await deleteEmoji(list, message);

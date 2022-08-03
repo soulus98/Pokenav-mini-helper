@@ -4,18 +4,14 @@ const fs = require("fs"),
 			Discord = require("discord.js");
 let list = new Discord.Collection();
 function deleteMessage(message) {
-	message.delete().catch(() => console.error(`Can not cleanup message:${message.id} from channel: ${message.channel.name}${message.channel}.\n Message content: ${message.content}`));
+	message.delete().catch(() => console.error(`Can not cleanup message:${message.id} from channel: ${message.channel.name}${message.channel}.\nMessage content: ${message.content}`));
 }
 module.exports = {
 	async checkCleanupList(message) {
-		if (message.channel.type == "DM"
-		  || (message.author.bot && message.author.id != "428187007965986826"
-			|| message.member.roles.cache.has(ops.modRole)
-			|| message.member.permissions.has("ADMINISTRATOR")
+		if (
+			message.channel.type == "DM"
 			|| message.author.id == dev
-			)
 		) return;
-		if (message.author.bot && message.author.id != "428187007965986826") return;
 		for (const g of list) {
 			if (!g[1].includes(message.channel.id)) {
 				if (g[0] == list.lastKey()) {
@@ -24,6 +20,11 @@ module.exports = {
 				continue;
 			}
 			if (message.author.id == "428187007965986826") module.exports.pokeNavCleanup(message, g[0]); // pokenav message filtering
+			if (
+				message.author.bot
+				|| message.member.roles.cache.has(ops.modRole)
+				|| message.member.permissions.has("ADMINISTRATOR")
+			) return;
 			else module.exports.cleanup(message, g[0]);
 		}
 	},
