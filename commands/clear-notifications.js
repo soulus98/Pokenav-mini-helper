@@ -4,11 +4,12 @@ module.exports = {
 	name: "clear-notify",
 	description: "Clears bosses from the reaction system and deletes the roles.",
   aliases: ["cnotify", "cn"],
-  usage: `\`${ops.prefix}clear-notify <boss(1)> [boss2] ...\` or \`${ops.prefix}clear-notify all\``, // testo
+  usage: "`[prefix]clear-notify <boss(1)> [boss2] ...` or `[prefix]clear-notify all`", // testo
 	guildOnly:true,
 	args:true,
 	execute(message, args){
 		return new Promise((resolve) => {
+			const ops = message.client.configs.get(message.guild.id);
 			if (message.channelId != ops.pokenavChannel) return resolve(", but it wasn't sent in pokenavChannel");
 			if (!ops.notifyReactionChannel) return resolve(", but notifyReactionChannel is blank");
 			clearNotify(message, args).catch((e) => {

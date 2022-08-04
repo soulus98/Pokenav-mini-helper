@@ -1,6 +1,7 @@
 const { dateToTime, dev } = require("../func/misc.js");
 
 function handleCommand(message, postedTime){
+	const ops = client.configs.get(message.guild.id);
   const client = message.client;
   if (!message.content.startsWith(ops.prefix) || message.author.bot) return; // No prefix? Bot? Cancel
   // finangling the command and argument vars

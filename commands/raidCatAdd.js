@@ -5,7 +5,7 @@ module.exports = {
 	name: "add-raid-category",
 	description: "Links a raid category to a raid announce channel in the system that switches raid categories. Run in the intended channel or include a [channel id/tag] if you run it from an admin channel.",
   aliases: ["ac", "arc", "add-category"],
-  usage: `\`${ops.prefix}add <raidCategory> [announceChannel id/tag]\``,
+  usage: "`[prefix]add <raidCategory> [announceChannel id/tag]`",
 	guildOnly:true,
 	args: true,
 	type:"Raid Category",
@@ -27,7 +27,7 @@ module.exports = {
 					raidCatId = args[0].slice(2, -1);
 				}
 				message.guild.channels.fetch(raidCatId).then((category) => {
-					addRaidCat(raidCatId, announceChannelId).then(() => {
+					addRaidCat(raidCatId, announceChannelId, message.guild.id).then(() => {
 						setTimeout(() => {
 							message.delete().catch(() => { // eslint-disable-line max-nested-callbacks
 								console.error(`[${dateToTime(new Date())}]: Error: Could not delete message: ${message.url}\nContent of mesage: "${message.content}"`);

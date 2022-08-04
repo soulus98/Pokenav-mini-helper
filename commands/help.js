@@ -4,9 +4,10 @@ module.exports = {
 	name: "help",
 	description: "Displays all commands and information for specific commands.",
   aliases: ["command", "commands"],
-  usage: `\`${ops.prefix}help [command name]\``,
+  usage: "`[prefix]help [command name]`",
 	type:"Info",
 	execute(message, args) {
+		const ops = message.client.configs.get(message.guild.id);
 		return new Promise(function(resolve) {
 			const data = [];
 			const { commands } = message.client;
@@ -49,7 +50,7 @@ function dataPush(data, command){
 	data.push(`\n**Name:** ${command.name}`);
 	if (command.aliases) data.push(`**Aliases:** ${command.aliases.join(", ")}`);
 	if (command.description) data.push(`**Description:** ${command.description}`);
-	if (command.usage) data.push(`**Usage:** ${command.usage}`);
+	if (command.usage) data.push(`**Usage:** ${command.usage.replace("[prefix]", ops.prefix)}`);
 	if (command.cooldown) data.push(`**Cooldown:** ${command.cooldown} second(s)`);
 	return data;
 }

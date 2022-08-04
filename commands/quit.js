@@ -4,7 +4,7 @@ module.exports = {
 	name: "force-quit",
 	description: "Forcibly quit the bot server. IDK why you'd need to do this but I've included it just in case.",
   aliases: ["quit", "end"],
-  usage: `\`${ops.prefix}quit\``,
+  usage: "`[prefix]quit`",
 	guildOnly:true,
 	type:"Admin",
 	execute(message) {

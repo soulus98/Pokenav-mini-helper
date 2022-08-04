@@ -1,13 +1,17 @@
 const fs = require("fs"),
 			path = require("path"),
 			{ errorMessage, groupList, dev } = require("../func/misc.js"),
-			Discord = require("discord.js");
-let list = new Discord.Collection();
+			Discord = require("discord.js"),
+			serverLists = new Discord.Collection(),
+			lookup = new Discord.Collection();
+
 function deleteMessage(message) {
 	message.delete().catch(() => console.error(`Can not cleanup message:${message.id} from channel: ${message.channel.name}${message.channel}.\nMessage content: ${message.content}`));
 }
 module.exports = {
 	async checkCleanupList(message) {
+		const list = serverLists.get(message.guild.id);
+		const ops = message.client.configs.get(message.guild.id);
 		if (
 			message.channel.type == "DM"
 			|| message.author.id == dev
@@ -29,6 +33,7 @@ module.exports = {
 		}
 	},
 	pokeNavCleanup(message, group) {
+		const ops = message.client.configs.get(message.guild.id);
 		switch (group) {
 			case "raid":
 				if (message.embeds[0]?.description?.startsWith("There are too many channels under the category")) {
@@ -100,6 +105,7 @@ module.exports = {
 		}
 	},
 	async cleanup(message, group){
+		const ops = message.client.configs.get(message.guild.id);
 		switch (group) {
 			case "raid":
 				if (message.content.startsWith("$r")) {
@@ -113,7 +119,8 @@ module.exports = {
 				return;
 		}
 	},
-	addCleanupChannel(id, g) {
+	addCleanupChannel(id, g, sId) {
+		const list = serverLists.get(sId);
 		return new Promise((resolve, reject) => {
 			const group = list.get(g);
 			if (group.includes(id)) return reject();
@@ -124,7 +131,8 @@ module.exports = {
 			});
 		});
 	},
-	removeCleanupChannel(id, g) {
+	removeCleanupChannel(id, g, sId) {
+		const list = serverLists.get(sId);
 		return new Promise((resolve, reject) => {
 			if (g == "all") {
 				const removed = [];
@@ -154,14 +162,15 @@ module.exports = {
 			});
 		});
 	},
-	loadCleanupList() {
+	loadCleanupList(folder, sId) {
+		let list = new Discord.Collection();
 		return new Promise(function(resolve, reject) {
 			for (const g of groupList) {
 				list.set(g, []);
 			}
 			new Promise((res) => {
 				try {
-					delete require.cache[require.resolve("../server/cleanupList.json")];
+					delete require.cache[require.resolve(`../server/${folder}/cleanupList.json`)];
 					res();
 				} catch (e){
 					if (e.code == "MODULE_NOT_FOUND") {
@@ -174,7 +183,7 @@ module.exports = {
 				}
 			}).then(() => {
 				try {
-					const jsonList = require("../server/cleanupList.json");
+					const jsonList = require(`../server/${folder}/cleanupList.json`);
 					for (const g in jsonList) {
 						list.set(g, jsonList[g]);
 					}
@@ -182,17 +191,21 @@ module.exports = {
 						acc = acc + item.length;
 						return acc;
 					}, 0);
-					console.log(`\nCleanup list loaded. It contains ${chAmount} channels in ${list.size} groups: ${groupList.join(", ")}`);
+					console.log(`Cleanup list loaded. It contains ${chAmount} channels in ${list.size} groups: ${groupList.join(", ")}`);
+					serverLists.set(folder, list);
+					lookup.set(sId, folder);
 					resolve(list);
 				} catch (e) {
 					if (e.code == "MODULE_NOT_FOUND") {
-						fs.writeFile(path.resolve(__dirname, "../server/cleanupList.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
+						fs.writeFile(path.resolve(__dirname, `../server/${folder}/cleanupList.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
 							if (err){
 								reject(`Error thrown when writing the cleanup list file. Error: ${err}`);
 								return;
 							}
 							console.log("Could not find cleanupList.json. Making a new one...");
-							list = require("../server/cleanupList.json");
+							list = require(`../server/${folder}/cleanupList.json`);
+							serverLists.set(folder, list);
+							lookup.set(sId, folder);
 							resolve(list);
 						});
 					}	else {
@@ -203,9 +216,10 @@ module.exports = {
 			});
 		});
 	},
-	saveCleanupList() {
+	saveCleanupList(sId) {
+		const folder = lookup.get(sId);
 		return new Promise((resolve) => {
-			fs.writeFile(path.resolve(__dirname, "../server/cleanupList.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
+			fs.writeFile(path.resolve(__dirname, `../server/${folder}/cleanupList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
 				if (err){
 					errorMessage(new Date(), false, `Error: An error occured while saving the cleanup list. Error: ${err}`);
 					return;

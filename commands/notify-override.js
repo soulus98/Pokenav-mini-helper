@@ -4,7 +4,7 @@ module.exports = {
 	name: "notify-override",
 	description: "PokeNav Notification roles setup",
   aliases: ["override", "n-override", "or"],
-  usage: `\`${ops.prefix}override <boss> <tier> [emoji]\``, // testo
+  usage: "`[prefix]override <boss> <tier> [emoji]`", // testo
 	guildOnly:true,
 	args:true,
 	async execute(message, args) {

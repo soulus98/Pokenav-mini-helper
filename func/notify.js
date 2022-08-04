@@ -2,15 +2,17 @@
 const Discord = require("discord.js"),
 			fs = require("fs"),
 			path = require("path"),
-			{ errorMessage, dateToTime, dev } = require("../func/misc.js");
-let list = new Discord.Collection();
+			{ errorMessage, dateToTime, dev } = require("./misc.js");
+const serverLists = new Discord.Collection(),
+		lookup = new Discord.Collection();
 
 
 module.exports = {
 	async notify(message, args) {
+		const list = serverLists.get(message.guild.id);
 		if (hasDuplicates(args)) throw ["dupe"];
 		console.log(`[${dateToTime(new Date())}]Beginning notification workflow for: ${args.join(", ")}`);
-		const checkedArgs = await argsCheck(args);
+		const checkedArgs = await argsCheck(args, list);
 		if (!checkedArgs.length) throw ["already"];
 		const messageData = [];
 		const removedArgs = args.filter((v) => !checkedArgs.includes(v));
@@ -42,13 +44,14 @@ module.exports = {
 			}
 		});
 		module.exports.makeNotificationReactions(message, newList).then(() => {
-			message.reply(`Notifications added.\n<#${ops.notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+			message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 		}).catch((err) => {
 			message.reply(err);
 			console.error(err);
 		});
 	},
 	async override(message, boss, tier, emoji) {
+		const list = serverLists.get(message.guild.id);
 		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${boss}`);
 		for (const item of list) {
 			if (item[1].includes(boss)) throw ["already"];
@@ -73,11 +76,12 @@ module.exports = {
 			message.reply("Notifications added.");
 		});
 	},
-	loadNotifyList() {
+	loadNotifyList(folder, sId) {
+		let list = new Discord.Collection();
 		return new Promise(function(resolve, reject) {
 			new Promise((res) => {
 				try {
-					delete require.cache[require.resolve("../server/notifyList.json")];
+					delete require.cache[require.resolve(`../server/${folder}/notifyList.json`)];
 					res();
 				} catch (e){
 					if (e.code == "MODULE_NOT_FOUND") {
@@ -90,7 +94,7 @@ module.exports = {
 				}
 			}).then(() => {
 				try {
-					const jsonList = require("../server/notifyList.json");
+					const jsonList = require(`../server/${folder}/notifyList.json`);
 					for (const g in jsonList) {
 						list.set(g, jsonList[g]);
 					}
@@ -98,17 +102,21 @@ module.exports = {
 						acc = acc + item.length;
 						return acc;
 					}, 0);
-					console.log(`\nNotification list loaded. It contains ${list.size} tiers with ${bossAmount} bosses.`);
+					console.log(`Notification list loaded. It contains ${list.size} tiers with ${bossAmount} bosses.`);
+					serverLists.set(folder, list);
+					lookup.set(sId, folder);
 					resolve(list);
 				} catch (e) {
 					if (e.code == "MODULE_NOT_FOUND") {
-						fs.writeFile(path.resolve(__dirname, "../server/notifyList.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
+						fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
 							if (err){
 								reject(`Error thrown when writing the notify list file. Error: ${err}`);
 								return;
 							}
 							console.log("\nCould not find notifyList.json. Making a new one...");
-							list = require("../server/notifyList.json");
+							list = require(`../server/${folder}/notifyList.json`);
+							serverLists.set(folder, list);
+							lookup.set(sId, folder);
 							resolve(list);
 						});
 					}	else {
@@ -119,9 +127,10 @@ module.exports = {
 			});
 		});
 	},
-	saveNotifyList() {
+	saveNotifyList(sId) {
+		const folder = lookup.get(sId);
 		return new Promise((resolve) => {
-			fs.writeFile(path.resolve(__dirname, "../server/notifyList.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
+			fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
 				if (err){
 					errorMessage(new Date(), false, `Error: An error occured while saving the notify list. Error: ${err}`);
 					return;
@@ -133,6 +142,8 @@ module.exports = {
 		});
 	},
 	async addReactionRole(messageReaction, user){
+		const list = serverLists.get(messageReaction.message.guild.id);
+		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
 			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
@@ -161,6 +172,8 @@ module.exports = {
 		}
 	},
 	async removeReactionRole(messageReaction, user){
+		const list = serverLists.get(messageReaction.message.guild.id);
+		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
 			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
@@ -189,13 +202,14 @@ module.exports = {
 		}
 	},
 	async clearNotify(message, args){
+		const list = serverLists.get(message.guild.id);
 		console.log(`[${dateToTime(new Date())}]Clearing notification workflow for: ${args.join(", ")}`);
 		const newArgs = [...args];
 		message.react("👀");
 		if (args[0].toLowerCase() == "all") {
 			await deleteRoles(list, message);
 			await deleteEmoji(list, message);
-			list = new Discord.Collection();
+			serverLists.set(message.guild.id, new Discord.Collection());
 			await module.exports.deleteNotificationReactions(message, "all");
 			message.reply("Notifications removed.");
 			return;
@@ -246,7 +260,7 @@ module.exports = {
 			}
 		});
 		newList.sort(sortList);
-		list = newList;
+		serverLists.set(message.guild.id, newList);
 		console.log("Updating saved list");
 		module.exports.saveNotifyList().then(() => {
 			return;
@@ -258,6 +272,9 @@ module.exports = {
 		if (input instanceof Discord.Message) notifyChannel = await input.guild.channels.fetch(ops.notifyReactionChannel);
 		else if (input instanceof Discord.Guild) notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
 		else throw "Could not load notifyChannel";
+		const sId = notifyChannel.guild.id;
+		const list = serverLists.get(sId);
+		const ops = input.client.configs.get(sId);
 		if (!newList) newList = list;
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
@@ -279,7 +296,7 @@ module.exports = {
 				message = await notifyChannel.messages.fetch(existingIds.get(tier));
 				await message.delete();
 				newList.delete(tier);
-				if (lastKey == tier) saveList(newList);
+				if (lastKey == tier) saveList(newList, sId);
 			} else {
 				if (existingIds.has(tier)) {
 					console.log(`Reacting to ${tier} message`);
@@ -305,12 +322,13 @@ module.exports = {
 							else newList.set(tier, newArr);
 						} else console.error(err);
 					});
-					if (lastKey == tier && arr.indexOf(item) == arr.length - 1) return saveList(newList);
+					if (lastKey == tier && arr.indexOf(item) == arr.length - 1) return saveList(newList, sId);
 				}
 			}
 		}
 	},
 	async deleteNotificationReactions(message, inputList){
+		const ops = message.client.configs.get(message.guild.id);
 		try {
 			const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
 			const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
@@ -333,7 +351,7 @@ module.exports = {
 	},
 };
 
-async function argsCheck(args) {
+async function argsCheck(args, list) {
 	let checkedArgs = args;
 	if (list.size == 0) return checkedArgs;
 	for (const item of list) {
@@ -342,6 +360,7 @@ async function argsCheck(args) {
 	}
 }
 async function pokeNavCheck(data, message, messageData, i, result) {
+	const ops = message.client.configs.get(message.guild.id);
 	if (!i) i = 0;
 	if (!result) result = new Discord.Collection;
 	if (!messageData) messageData = [];
@@ -402,6 +421,7 @@ async function pushCheckLoop(data, message, messageData, i, result, tier, newMon
 }
 
 async function pokeNavOverrideCheck(boss, message) {
+	const ops = message.client.configs.get(message.guild.id);
 	const pokenavChannel = await message.guild.channels.fetch(ops.pokenavChannel);
 	message.react("👀");
 	console.log(`Checking ${boss} counters for tier`);
@@ -443,6 +463,7 @@ async function pokeNavOverrideCheck(boss, message) {
 function makeRoles(input, message) {
 	console.log("Making/checking roles & rules");
   return new Promise((resolve) => {
+		const ops = message.client.configs.get(message.guild.id);
     const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
@@ -512,6 +533,7 @@ async function deleteRoles(input, message) {
 }
 
 async function makeEmoji(input, message) {
+	const ops = message.client.configs.get(message.guild.id);
 	const messageData = [];
 	try {
 		const emojiServer = await message.client.guilds.cache.get("994034906306969691");
@@ -563,9 +585,9 @@ async function deleteEmoji(input, message) {
 	}
 }
 
-function saveList(newList){
+function saveList(newList, sId){
 	newList.sort(sortList);
-	list = newList;
+	serverLists.set(sId, newList);
 	console.log("Updating saved list");
 	module.exports.saveNotifyList().then(() => {
 		return;

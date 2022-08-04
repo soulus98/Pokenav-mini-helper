@@ -5,7 +5,7 @@ module.exports = {
 	name: "remove-raid-category",
 	description: "Unlinks all raid categories from a certain raid announce channel in the system that switches categories with PokeNav.",
   aliases: ["rc", "rrc", "remove-category"],
-  usage: `\`${ops.prefix}rrc [channel id]\``,
+  usage: "`[prefix]rrc [channel id]`",
 	guildOnly:true,
 	type:"Raid Category",
 	execute(message, args) {
@@ -22,7 +22,7 @@ module.exports = {
 			}
 			console.log(id);
 			message.guild.channels.fetch(id).then((channel) => {
-				removeRaidCat(id).then(() => {
+				removeRaidCat(id, message.guild.id).then(() => {
 					setTimeout(() => {
 						message.delete().catch(() => {
 							message.react("👍").catch();

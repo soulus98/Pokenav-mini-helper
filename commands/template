@@ -10,7 +10,7 @@ module.exports = {
 	name: "",
 	description: "",
   aliases: [""],
-  usage: `\`${ops.prefix}\``,
+  usage: "`[prefix]`",
 	guildOnly:true,
 	permissions: "MANAGE_GUILD",
 	execute(message, args) {

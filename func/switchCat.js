@@ -2,11 +2,14 @@ const fs = require("fs"),
 			path = require("path"),
 			{ errorMessage, dateToTime } = require("../func/misc.js"),
 			Discord = require("discord.js");
-let list = new Discord.Collection(),
-		timedOut = false;
+const serverLists = new Discord.Collection(),
+			lookup = new Discord.Collection();
+let timedOut = false;
 
 module.exports = {
   async checkCategory(channel){
+		const list = serverLists.get(channel.guild.id);
+		const ops = channel.client.configs.get(channel.guild.id);
 		const oldCategoryId = channel.parentId;
 		if (oldCategoryId == timedOut) return;
 		const filteredList = list.filter((group) => {
@@ -36,7 +39,8 @@ module.exports = {
 			}
 		}
   },
-  addRaidCat(cat, ch) {
+  addRaidCat(cat, ch, sId) {
+		const list = serverLists.get(sId);
     return new Promise((resolve, reject) => {
       if (!list.get(ch)) {
         list.set(ch, []);
@@ -50,18 +54,20 @@ module.exports = {
       });
     });
   },
-  async removeRaidCat(id) {
+  async removeRaidCat(id, sId) {
+		const list = serverLists.get(sId);
 			if (list.get(id)) {
 				list.delete(id);
 				await module.exports.saveRaidCatList();
 				return;
 			} else throw "not";
   },
-  loadRaidCatList() {
+  loadRaidCatList(folder, sId) {
+		let list = new Discord.Collection();
     return new Promise(function(resolve, reject) {
       new Promise((res) => {
         try {
-          delete require.cache[require.resolve("../server/raidCatList.json")];
+          delete require.cache[require.resolve(`../server/${folder}/raidCatList.json`)];
           res();
         } catch (e){
           if (e.code == "MODULE_NOT_FOUND") {
@@ -74,7 +80,7 @@ module.exports = {
         }
       }).then(() => {
         try {
-          const jsonList = require("../server/raidCatList.json");
+          const jsonList = require(`../server/${folder}/raidCatList.json`);
           for (const g in jsonList) {
             list.set(g, jsonList[g]);
           }
@@ -82,17 +88,21 @@ module.exports = {
             acc = acc + item.length;
             return acc;
           }, 0);
-          console.log(`\nRaid Category list loaded. It contains ${catAmount} categories linked to ${list.size} channels.`);
+          console.log(`Raid Category list loaded. It contains ${catAmount} categories linked to ${list.size} channels.`);
+					serverLists.set(folder, list);
+					lookup.set(sId, folder);
           resolve(list);
         } catch (e) {
           if (e.code == "MODULE_NOT_FOUND") {
-            fs.writeFile(path.resolve(__dirname, "../server/raidCatList.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
+            fs.writeFile(path.resolve(__dirname, `../server/${folder}/raidCatList.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
               if (err){
                 reject(`Error thrown when writing the raidCat list file. Error: ${err}`);
                 return;
               }
               console.log("Could not find raidCatList.json. Making a new one...");
-              list = require("../server/raidCatList.json");
+              list = require(`../server/${folder}/raidCatList.json`);
+							serverLists.set(folder, list);
+							lookup.set(sId, folder);
               resolve(list);
             });
           }	else {
@@ -103,9 +113,10 @@ module.exports = {
       });
     });
   },
-  saveRaidCatList() {
+  saveRaidCatList(sId) {
+		const folder = lookup.get(sId);
     return new Promise((resolve) => {
-      fs.writeFile(path.resolve(__dirname, "../server/raidCatList.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
+      fs.writeFile(path.resolve(__dirname, `../server/${folder}/raidCatList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
         if (err){
           errorMessage(new Date(), false, `Error: An error occured while saving the raidCat list. Error: ${err}`);
           return;

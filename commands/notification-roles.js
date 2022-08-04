@@ -4,7 +4,7 @@ module.exports = {
 	name: "notify",
 	description: "PokeNav Notification roles setup",
   aliases: ["noti", "n"],
-  usage: `\`${ops.prefix}notify <boss(1)> [boss2] ...\``, // testo
+  usage: "`[prefix]notify <boss(1)> [boss2] ...`", // testo
 	guildOnly:true,
 	args:true,
 	execute(message, args) {

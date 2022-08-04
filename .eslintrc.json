@@ -7,9 +7,6 @@
 	"parserOptions": {
 		"ecmaVersion": 2020
 	},
-	"globals": {
-  	"ops": "writable"
-  },
 	"rules": {
 		"arrow-spacing": ["warn", { "before": true, "after": true }],
 		"brace-style": ["error", "1tbs", { "allowSingleLine": true }],

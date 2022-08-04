@@ -4,7 +4,7 @@ module.exports = {
 	name: "restart",
 	description: "Restarts the bot. I haven't (can't) thoroughly tested this, so sorry if t doesn't work",
   aliases: ["rs"],
-  usage: `\`${ops.prefix}rs\``,
+  usage: "`[prefix]rs`",
 	guildOnly:true,
 	type:"Admin",
 	execute(message) {

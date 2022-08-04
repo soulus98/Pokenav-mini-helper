@@ -5,7 +5,7 @@ module.exports = {
 	name: "add-cleanup-channel",
 	description: `Adds a channel to the list that is watched for Pokenav cleanup. \`Group\` must be one of: \`${groupList.join("`, `")}\` for specific filtering. Run in the intended channel or include a [channel id/tag] if you run it from an admin channel.`,
   aliases: ["add"],
-  usage: `\`${ops.prefix}add <group> [channel id/tag]\``,
+  usage: "`[prefix]add <group> [channel id/tag]`",
 	guildOnly:true,
 	args: true,
 	type:"Pokenav Cleanup",
@@ -27,7 +27,7 @@ module.exports = {
 				id = message.channel.id;
 			}
 			message.guild.channels.fetch(id).then((ch) => {
-				addCleanupChannel(id, group).then(() => {
+				addCleanupChannel(id, group, message.guild.id).then(() => {
 					setTimeout(() => {
 						message.delete().catch(() => {
 							console.error(`[${dateToTime(new Date())}]: Error: Could not delete message: ${message.url}\nContent of mesage: "${message.content}"`);

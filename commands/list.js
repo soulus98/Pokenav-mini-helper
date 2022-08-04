@@ -6,7 +6,7 @@ module.exports = {
 	name: "list-filter-channels",
 	description: "Lists all of the filtered raid channels and raid categories. Type must be either `cleanup`, `categories`, or `notifications`",
   aliases: ["ls", "list", "list-channels", "list-filter", "filter-channels"],
-  usage: `\`${ops.prefix}list <type>\``,
+  usage: "`[prefix]list <type>`",
 	guildOnly:true,
 	type:"Info",
 	args:true,

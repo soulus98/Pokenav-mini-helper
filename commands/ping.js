@@ -1,7 +1,7 @@
 module.exports = {
 	name: "check-server-ping",
 	aliases: ["check-ping", "server-ping", "ping"],
-	usage: `\`${ops.prefix}ping\``,
+	usage: "`[prefix]ping`",
 	description: "Ping! Tells you the server delay for the message.",
 	permissions: "VIEW_CHANNEL",
 	type:"Info",
