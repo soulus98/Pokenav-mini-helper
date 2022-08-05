@@ -46,25 +46,14 @@ function loadCommands(){
 	return new Promise((resolve) => {
 		client.commands = new Discord.Collection();
 		const commandFiles = fs.readdirSync(path.resolve(__dirname, "./commands")).filter(file => file.endsWith(".js"));
-		let commandFilesNames = "\nThe currently loaded commands and cooldowns are:\n";
 		for (const file of commandFiles) {		// Loads commands
 			const command = require(`./commands/${file}`);
-			commandFilesNames = commandFilesNames + command.name;
-			if (command.cooldown){
-				commandFilesNames = commandFilesNames + ":\t" + command.cooldown + " seconds \n";
-			} else {
-				commandFilesNames = commandFilesNames + "\n";
-			}
 			client.commands.set(command.name, command);
 		}
-		console.log(commandFilesNames);
+		console.log(`\nThe currently loaded commands and cooldowns are:\n• ${client.commands.map(c => c.name).join("\n• ")}`);
 		resolve();
 	});
 }
-// Checks all the bot guilds and leaves them if they aren't the intended server
-// If it is called from the main event, it sends a reply message
-// This is vital, else someone could change the settings by simply inviting the bot to their server and being admin
-// TODO: Make different settings for different servers. It is not necessary, but would be good practice
 
 load();
 
