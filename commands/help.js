@@ -34,7 +34,7 @@ module.exports = {
 				return;
 			}
 			try {
-				dataPush(data, command);
+				dataPush(data, command, message);
 				replyNoMention(message, data.join("\n"), { split: true });
 				resolve(", and it was successful.");
 				return;
@@ -46,7 +46,8 @@ Stack: ${err.stack}`);
 		});
 	},
 };
-function dataPush(data, command){
+function dataPush(data, command, message){
+	const ops = message.client.configs.get(message.guild.id);
 	data.push(`\n**Name:** ${command.name}`);
 	if (command.aliases) data.push(`**Aliases:** ${command.aliases.join(", ")}`);
 	if (command.description) data.push(`**Description:** ${command.description}`);

@@ -64,6 +64,7 @@ module.exports = {
   },
   loadRaidCatList(folder, sId) {
 		let list = new Discord.Collection();
+		if (!folder) folder = lookup.get(sId);
     return new Promise(function(resolve, reject) {
       new Promise((res) => {
         try {
@@ -89,7 +90,7 @@ module.exports = {
             return acc;
           }, 0);
           console.log(`Raid Category list loaded. It contains ${catAmount} categories linked to ${list.size} channels.`);
-					serverLists.set(folder, list);
+					serverLists.set(sId, list);
 					lookup.set(sId, folder);
           resolve(list);
         } catch (e) {
@@ -101,7 +102,7 @@ module.exports = {
               }
               console.log("Could not find raidCatList.json. Making a new one...");
               list = require(`../server/${folder}/raidCatList.json`);
-							serverLists.set(folder, list);
+							serverLists.set(sId, list);
 							lookup.set(sId, folder);
               resolve(list);
             });

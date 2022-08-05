@@ -1,8 +1,8 @@
 const { dateToTime, dev } = require("../func/misc.js");
 
 function handleCommand(message, postedTime){
+	const client = message.client;
 	const ops = client.configs.get(message.guild.id);
-  const client = message.client;
   if (!message.content.startsWith(ops.prefix) || message.author.bot) return; // No prefix? Bot? Cancel
   // finangling the command and argument vars
   const args = message.content.slice(ops.prefix.length).trim().split(" ");
@@ -28,7 +28,7 @@ function handleCommand(message, postedTime){
   if (command.args && !args.length) {																// Checking for arguments if an argument is required
     let reply = "You didn't provide any arguments.";
     if (command.usage) {
-      reply += `\nThe proper usage would be: ${command.usage}`;
+      reply += `\nThe proper usage would be: ${command.usage.replace("[prefix]", ops.prefix)}`;
     }
     logString = logString + ", but it failed, as it requires arguments, and none were provided.";
     console.log(logString);

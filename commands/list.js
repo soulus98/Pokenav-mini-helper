@@ -18,7 +18,7 @@ module.exports = {
 		switch (args[0]) {
 			case "clean":
 			case "cleanup":
-				loadCleanupList().then((list) => {
+				loadCleanupList(undefined, message.guild.id).then((list) => {
 					const chAmount = list.reduce((acc, item) => {
 						acc = acc + item.length;
 						return acc;
@@ -43,7 +43,7 @@ module.exports = {
 			case "categories":
 			case "cats":
 			case "catswitch":
-				loadRaidCatList().then((list) => {
+				loadRaidCatList(undefined, message.guild.id).then((list) => {
 					const catAmount = list.reduce((acc, item) => {
 						acc = acc + item.length;
 						return acc;
@@ -67,7 +67,7 @@ module.exports = {
 				return;
 			case "notifications":
 			case "notis":
-				loadNotifyList().then((list) => {
+				loadNotifyList(undefined, message.guild.id).then((list) => {
 					const bossAmount = list.reduce((acc, g) => {
 						acc = acc + g.length;
 						return acc;

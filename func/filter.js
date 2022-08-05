@@ -11,6 +11,7 @@ function deleteMessage(message) {
 module.exports = {
 	async checkCleanupList(message) {
 		const list = serverLists.get(message.guild.id);
+		if (!list) return;
 		const ops = message.client.configs.get(message.guild.id);
 		if (
 			message.channel.type == "DM"
@@ -164,6 +165,7 @@ module.exports = {
 	},
 	loadCleanupList(folder, sId) {
 		let list = new Discord.Collection();
+		if (!folder) folder = lookup.get(sId);
 		return new Promise(function(resolve, reject) {
 			for (const g of groupList) {
 				list.set(g, []);
@@ -192,7 +194,7 @@ module.exports = {
 						return acc;
 					}, 0);
 					console.log(`Cleanup list loaded. It contains ${chAmount} channels in ${list.size} groups: ${groupList.join(", ")}`);
-					serverLists.set(folder, list);
+					serverLists.set(sId, list);
 					lookup.set(sId, folder);
 					resolve(list);
 				} catch (e) {
@@ -204,7 +206,7 @@ module.exports = {
 							}
 							console.log("Could not find cleanupList.json. Making a new one...");
 							list = require(`../server/${folder}/cleanupList.json`);
-							serverLists.set(folder, list);
+							serverLists.set(sId, list);
 							lookup.set(sId, folder);
 							resolve(list);
 						});

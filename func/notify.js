@@ -78,6 +78,7 @@ module.exports = {
 	},
 	loadNotifyList(folder, sId) {
 		let list = new Discord.Collection();
+		if (!folder) folder = lookup.get(sId);
 		return new Promise(function(resolve, reject) {
 			new Promise((res) => {
 				try {
@@ -103,7 +104,7 @@ module.exports = {
 						return acc;
 					}, 0);
 					console.log(`Notification list loaded. It contains ${list.size} tiers with ${bossAmount} bosses.`);
-					serverLists.set(folder, list);
+					serverLists.set(sId, list);
 					lookup.set(sId, folder);
 					resolve(list);
 				} catch (e) {
@@ -115,7 +116,7 @@ module.exports = {
 							}
 							console.log("\nCould not find notifyList.json. Making a new one...");
 							list = require(`../server/${folder}/notifyList.json`);
-							serverLists.set(folder, list);
+							serverLists.set(sId, list);
 							lookup.set(sId, folder);
 							resolve(list);
 						});
@@ -262,25 +263,30 @@ module.exports = {
 		newList.sort(sortList);
 		serverLists.set(message.guild.id, newList);
 		console.log("Updating saved list");
-		module.exports.saveNotifyList().then(() => {
+		module.exports.saveNotifyList(message.guild.id).then(() => {
 			return;
 		});
 		message.reply(`Notifications removed.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async makeNotificationReactions(input, newList){
+		let ops, sId;
 		let notifyChannel;
-		if (input instanceof Discord.Message) notifyChannel = await input.guild.channels.fetch(ops.notifyReactionChannel);
-		else if (input instanceof Discord.Guild) notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
-		else throw "Could not load notifyChannel";
-		const sId = notifyChannel.guild.id;
+		if (input instanceof Discord.Message) {
+			sId = input.guild.id;
+			ops = input.client.configs.get(sId);
+			notifyChannel = await input.guild.channels.fetch(ops.notifyReactionChannel);
+		}	else if (input instanceof Discord.Guild) {
+			sId = input.id;
+			ops = input.client.configs.get(sId);
+			notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
+		} else throw "Could not load notifyChannel";
 		const list = serverLists.get(sId);
-		const ops = input.client.configs.get(sId);
 		if (!newList) newList = list;
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
 			notifyChannel.bulkDelete(existingMessages).catch(console.error);
 			console.log("Saving blank list");
-			module.exports.saveNotifyList();
+			module.exports.saveNotifyList(sId);
 			return;
 		}
 		const existingIds = new Discord.Collection;
@@ -589,7 +595,7 @@ function saveList(newList, sId){
 	newList.sort(sortList);
 	serverLists.set(sId, newList);
 	console.log("Updating saved list");
-	module.exports.saveNotifyList().then(() => {
+	module.exports.saveNotifyList(sId).then(() => {
 		return;
 	});
 }

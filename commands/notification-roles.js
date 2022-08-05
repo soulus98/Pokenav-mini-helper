@@ -9,6 +9,7 @@ module.exports = {
 	args:true,
 	execute(message, args) {
 		return new Promise((resolve) => {
+			const ops = message.client.configs.get(message.guild.id);
 			if (message.channelId != ops.pokenavChannel) return resolve(", but it wasn't sent in pokenavChannel");
 			if (!ops.notifyReactionChannel) return resolve(", but notifyReactionChannel is blank");
 			notify(message, args).then().catch((e) => {

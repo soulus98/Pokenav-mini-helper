@@ -8,6 +8,7 @@ module.exports = {
 	guildOnly:true,
 	args:true,
 	async execute(message, args) {
+		const ops = message.client.configs.get(message.guild.id);
 		if (message.channelId != ops.pokenavChannel) return ", but it wasn't sent in pokenavChannel";
 		if (!ops.notifyReactionChannel) return ", but notifyReactionChannel is blank";
     if (args.length > 3 || args.length < 2) {
