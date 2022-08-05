@@ -271,7 +271,6 @@ module.exports = {
 	async makeNotificationReactions(input, newList){
 		let ops, sId;
 		let notifyChannel;
-		console.log(input);
 		if (input instanceof Discord.Message) {
 			sId = input.guild.id;
 			ops = input.client.configs.get(sId);
