@@ -59,14 +59,13 @@ load();
 
 client.once("ready", async () => {
 	await client.guilds.fetch();
-	const servers = await client.guilds.fetch();
 	for (const [k, config] of client.configs) {
+		const server = await client.guilds.fetch(k);
 		intendedServers.push(k);
-		if (!servers.has(k)){
+		if (!server){
 			console.error("\nCould not fetch server with id:", config.serverID);
 			continue;
 		}
-		const server = servers.get(config.serverID);
 		if (config.notifyReactionChannel) makeNotificationReactions(server).catch((err) => console.error(err));
 	}
 	const emojiServer = await client.guilds.cache.has("994034906306969691");

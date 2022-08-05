@@ -271,6 +271,7 @@ module.exports = {
 	async makeNotificationReactions(input, newList){
 		let ops, sId;
 		let notifyChannel;
+		console.log(input);
 		if (input instanceof Discord.Message) {
 			sId = input.guild.id;
 			ops = input.client.configs.get(sId);
@@ -279,9 +280,8 @@ module.exports = {
 			sId = input.id;
 			ops = input.client.configs.get(sId);
 			notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
-		} else throw "Could not load notifyChannel";
-		const list = serverLists.get(sId);
-		if (!newList) newList = list;
+		} else throw "\nCould not load notifyChannel";
+		if (!newList) newList = serverLists.get(sId);
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
 			notifyChannel.bulkDelete(existingMessages).catch(console.error);
