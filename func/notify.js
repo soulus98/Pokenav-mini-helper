@@ -264,7 +264,6 @@ module.exports = {
 		message.reply(`Notifications removed.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async makeNotificationReactions(server, newList){
-		console.log("testo");
 		const sId = server.id;
 		const ops = server.client.configs.get(sId);
 		const notifyChannel = await server.channels.fetch(ops.notifyReactionChannel);
