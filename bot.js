@@ -6,7 +6,7 @@ const { token } = require("./server/keys.json"),
 			{ dateToTime, errorMessage, dev } = require("./func/misc.js"),
 			{ checkCleanupList } = require("./func/filter.js"),
 			{ checkCategory } = require("./func/switchCat.js"),
-			{ makeNotificationReactions, addReactionRole, removeReactionRole } = require("./func/notify.js"),
+			{ allNotificationServers, addReactionRole, removeReactionRole } = require("./func/notify.js"),
 			{ loadServerFiles } = require("./func/load.js"),
 			ver = require("./package.json").version,
 			act = require("./server/globalConfig.json").activity || ver;
@@ -66,8 +66,8 @@ client.once("ready", async () => {
 			console.error("\nCould not fetch server with id:", config.serverID);
 			continue;
 		}
-		if (config.notifyReactionChannel) makeNotificationReactions(server).catch((err) => console.error(err));
 	}
+	allNotificationServers(client).catch((err) => console.error(err));
 	const emojiServer = await client.guilds.cache.has("994034906306969691");
 	const activeServers = client.guilds.cache;
 	const activeServerList = [];

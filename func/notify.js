@@ -43,12 +43,8 @@ module.exports = {
 				newList.set(key, arr.sort((a, b) => a.name - b.name));
 			}
 		});
-		module.exports.makeNotificationReactions(message, newList).then(() => {
-			message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
-		}).catch((err) => {
-			message.reply(err);
-			console.error(err);
-		});
+		await module.exports.allNotificationServers(message.client, newList);
+		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async override(message, boss, tier, emoji) {
 		const list = serverLists.get(message.guild.id);
@@ -72,9 +68,8 @@ module.exports = {
 			newArr.sort((a, b) => a.name - b.name);
 			list.set(tier, newArr);
 		}
-		module.exports.makeNotificationReactions(message, list).then(() => {
-			message.reply("Notifications added.");
-		});
+		await module.exports.allNotificationServers(message.client, list);
+		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>`);
 	},
 	loadNotifyList(folder, sId) {
 		let list = new Discord.Collection();
@@ -268,18 +263,11 @@ module.exports = {
 		});
 		message.reply(`Notifications removed.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
-	async makeNotificationReactions(input, newList){
-		let ops, sId;
-		let notifyChannel;
-		if (input instanceof Discord.Message) {
-			sId = input.guild.id;
-			ops = input.client.configs.get(sId);
-			notifyChannel = await input.guild.channels.fetch(ops.notifyReactionChannel);
-		}	else if (input instanceof Discord.Guild) {
-			sId = input.id;
-			ops = input.client.configs.get(sId);
-			notifyChannel = await input.channels.fetch(ops.notifyReactionChannel);
-		} else throw "\nCould not load notifyChannel";
+	async makeNotificationReactions(server, newList){
+		console.log("testo");
+		const sId = server.id;
+		const ops = server.client.configs.get(sId);
+		const notifyChannel = await server.channels.fetch(ops.notifyReactionChannel);
 		if (!newList) newList = serverLists.get(sId);
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
@@ -353,6 +341,15 @@ module.exports = {
 		} catch (e) {
 			console.error(e);
 		}
+	},
+	async allNotificationServers(client, list) {
+		for (const [k, config] of client.configs) {
+			const server = await client.guilds.fetch(k);
+			if (config.notifyReactionChannel) await module.exports.makeNotificationReactions(server, list);
+			else continue;
+			console.log(`Notifications loaded in ${server.name}`);
+		}
+		return;
 	},
 };
 
