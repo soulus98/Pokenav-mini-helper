@@ -605,7 +605,7 @@ function saveList(newList, sId){
 }
 
 function loadPokeLookup() {
-  const list = new Discord.Collection();
+  let list = new Discord.Collection();
 	return new Promise(function(resolve, reject) {
 		new Promise((res) => {
 			try {
@@ -626,16 +626,12 @@ function loadPokeLookup() {
 				for (const g in jsonList) {
 					list.set(g, jsonList[g]);
 				}
-				const bossAmount = list.reduce((acc, item) => {
-					acc = acc + item.length;
-					return acc;
-				}, 0);
 				console.log(`pokemon lookup loaded. It contains ${list.size} pokemon.`);
 				resolve(list);
 			} catch (e) {
 				if (e.code == "MODULE_NOT_FOUND") {
-		      // testo
-					fs.writeFile(path.resolve(__dirname, `../server/notifyList.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
+					loadAndFormatAPI();
+					fs.writeFile(path.resolve(__dirname, `../server/pokemonLookup.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
 						if (err){
 							reject(`Error thrown when writing the notify list file. Error: ${err}`);
 							return;
@@ -667,6 +663,38 @@ function saveNotifyList(sId) {
 			}
 		});
 	});
+}
+
+function loadAndFormatAPI() {
+	let xhr = new XMLHttpRequest();
+	xhr.open("GET", "https://fight.pokebattler.com/pokemon", [false]);
+	console.log("Loading pokebattler api...");
+	const pokemonLookup = {};
+
+	xhr.onload = function() {
+		console.log("Loaded. Status: ${xhr.status}");
+		const apiObj = JSON.parse(xhr.response);
+
+
+		for (const item of apiObj.pokemon) {
+			try {
+				pokemonLookup[item.pokemonId] = item.pokedex.pokemonNum;
+			} catch (e) {
+				console.log("failed to do: ", item)
+			}
+
+		}
+		console.log(Object.keys(pokemonLookup).length);
+		console.log(pokemonLookup);
+
+	};
+
+	xhr.onerror = function() { // only triggers if the request couldn't be made at all
+ 		console.log("Network Error");
+	};
+
+	xhr.send();
+//https://fight.pokebattler.com/pokemon
 }
 
 function hasDuplicates(array) {
