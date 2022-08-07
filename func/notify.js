@@ -47,16 +47,19 @@ module.exports = {
 		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async override(message, boss, tier, emoji) {
+		if (!emoji) {
+			message.reply("I need an emoji or Soul needs to fix the emoji grabber thingy\nUsage is `]override <boss> <tier> [emoji]`");
+			return;
+		}
 		const list = serverLists.get(message.guild.id);
 		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${boss}`);
 		for (const item of list) {
 			if (item[1].includes(boss)) throw ["already"];
 		}
 		message.react("👀");
-		const res = await pokeNavOverrideCheck(boss, message);
-		if (!res) return;
-		const [newBoss, eURL] = res;
-		const tempItem = { name : newBoss, url: eURL };
+		// const res = await pokeNavOverrideCheck(boss, message);
+		const tempItem = { name : boss };
+		if (emoji.startsWith("<")) emoji = emoji.slice(2, -1);
 		if (emoji) tempItem.identifier = emoji;
 		const tempList = new Discord.Collection().set(tier, [tempItem]);
 		await makeRoles(tempList, message);
@@ -156,11 +159,13 @@ module.exports = {
 						console.error(`[${dateToTime(new Date())}] Could not add ${roleName} to ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
-					messageReaction.message.channel.send(`<@&${ops.modRole}> I could not find a role. Please tell Soul.`);
+					const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
+					pokenavChannel.send(`<@&${ops.modRole}> I could not find a role while adding. Please tell Soul.`);
 					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
-				messageReaction.message.channel.send(`<@&${ops.modRole}> An emoji was not found in the saved list. Please tell Soul.`);
+				const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
+				pokenavChannel.send(`<@&${ops.modRole}> An emoji was not found in the saved list while adding. Please tell Soul.`);
 				console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
 			}
 		} catch (e) {
@@ -186,11 +191,13 @@ module.exports = {
 						console.error(`[${dateToTime(new Date())}]: Could not remove ${roleName} from ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
-					messageReaction.message.channel.send(`<@${ops.modRole}> I could not find a role. Please tell Soul.`);
+					const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
+					pokenavChannel.send(`<@&${ops.modRole}> I could not find a role while removing. Please tell Soul.`);
 					console.error(`[${dateToTime(new Date())}]: An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
-				messageReaction.message.channel.send(`<@${ops.modRole}> An emoji was not found in the saved list. Please tell Soul.`);
+				const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
+				pokenavChannel.send(`<@&${ops.modRole}> An emoji was not found in the saved list while removing. Please tell Soul.`);
 				console.error(`[${dateToTime(new Date())}]: An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
 			}
 		} catch (e) {
