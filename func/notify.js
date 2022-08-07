@@ -4,8 +4,8 @@ const Discord = require("discord.js"),
 			path = require("path"),
 			{ errorMessage, dateToTime, dev } = require("./misc.js");
 const serverLists = new Discord.Collection(),
-		lookup = new Discord.Collection(),
-		pokemonLookup = new Discord.Collection();
+		lookup = new Discord.Collection();
+let pokemonLookup = new Discord.Collection();
 
 
 module.exports = {
@@ -350,6 +350,7 @@ module.exports = {
 		}
 	},
 	async allNotificationServers(client, list) {
+		await loadPokeLookup();
 		for (const [k, config] of client.configs) {
 			const server = await client.guilds.fetch(k);
 			if (config.notifyReactionChannel) await module.exports.makeNotificationReactions(server, list);
@@ -605,68 +606,68 @@ function saveList(newList, sId){
 
 function loadPokeLookup() {
   const list = new Discord.Collection();
-		return new Promise(function(resolve, reject) {
-			new Promise((res) => {
-				try {
-					delete require.cache[require.resolve(`../server/pokemonLookup.json`)];
+	return new Promise(function(resolve, reject) {
+		new Promise((res) => {
+			try {
+				delete require.cache[require.resolve("../server/pokemonLookup.json")];
+				res();
+			} catch (e){
+				if (e.code == "MODULE_NOT_FOUND") {
+					// do nothing
 					res();
-				} catch (e){
-					if (e.code == "MODULE_NOT_FOUND") {
-						// do nothing
-						res();
-					} else {
-						reject(`Error thrown when loading pokemon lookup. Error: ${e}`);
-						return;
-					}
+				} else {
+					reject(`Error thrown when loading pokemon lookup. Error: ${e}`);
+					return;
 				}
-			}).then(() => {
-				try {
-					const jsonList = require(`../server/pokemonLookup.json`);
-					for (const g in jsonList) {
-						list.set(g, jsonList[g]);
-					}
-					const bossAmount = list.reduce((acc, item) => {
-						acc = acc + item.length;
-						return acc;
-					}, 0);
-					console.log(`pokemon lookup loaded. It contains ${list.size} pokemon.`);
-					resolve(list);
-				} catch (e) {
-					if (e.code == "MODULE_NOT_FOUND") {
-			      // testo
-						fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
-							if (err){
-								reject(`Error thrown when writing the notify list file. Error: ${err}`);
-								return;
-							}
-							console.log("\nCould not find notifyList.json. Making a new one...");
-							list = require(`../server/${folder}/notifyList.json`);
-							serverLists.set(sId, list);
-							lookup.set(sId, folder);
-							resolve(list);
-						});
-					}	else {
-						reject(`Error thrown when loading the notify list (2). Error: ${e}`);
-						return;
-					}
+			}
+		}).then(() => {
+			try {
+				const jsonList = require("../server/pokemonLookup.json");
+				for (const g in jsonList) {
+					list.set(g, jsonList[g]);
 				}
-			});
+				const bossAmount = list.reduce((acc, item) => {
+					acc = acc + item.length;
+					return acc;
+				}, 0);
+				console.log(`pokemon lookup loaded. It contains ${list.size} pokemon.`);
+				resolve(list);
+			} catch (e) {
+				if (e.code == "MODULE_NOT_FOUND") {
+		      // testo
+					fs.writeFile(path.resolve(__dirname, `../server/notifyList.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
+						if (err){
+							reject(`Error thrown when writing the notify list file. Error: ${err}`);
+							return;
+						}
+						console.log("\nCould not find notifyList.json. Making a new one...");
+						list = require(`../server/${folder}/notifyList.json`);
+						serverLists.set(sId, list);
+						lookup.set(sId, folder);
+						resolve(list);
+					});
+				}	else {
+					reject(`Error thrown when loading the notify list (2). Error: ${e}`);
+					return;
+				}
+			}
 		});
+	});
 }
 function saveNotifyList(sId) {
-		const folder = lookup.get(sId);
-		return new Promise((resolve) => {
-			fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
-				if (err){
-					errorMessage(new Date(), false, `Error: An error occured while saving the notify list. Error: ${err}`);
-					return;
-				} else {
-					resolve();
-					return;
-				}
-			});
+	const folder = lookup.get(sId);
+	return new Promise((resolve) => {
+		fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
+			if (err){
+				errorMessage(new Date(), false, `Error: An error occured while saving the notify list. Error: ${err}`);
+				return;
+			} else {
+				resolve();
+				return;
+			}
 		});
-	},
+	});
+}
 
 function hasDuplicates(array) {
     return (new Set(array)).size !== array.length;
