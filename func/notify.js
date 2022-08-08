@@ -350,7 +350,7 @@ module.exports = {
 		}
 	},
 	async allNotificationServers(client, list) {
-		await loadPokeLookup();
+		await loadPokemonLookup();
 		for (const [k, config] of client.configs) {
 			const server = await client.guilds.fetch(k);
 			if (config.notifyReactionChannel) await module.exports.makeNotificationReactions(server, list);
@@ -604,7 +604,7 @@ function saveList(newList, sId){
 	});
 }
 
-function loadPokeLookup() {
+function loadPokemonLookup() {
   let list = new Discord.Collection();
 	return new Promise(function(resolve, reject) {
 		new Promise((res) => {
@@ -633,24 +633,23 @@ function loadPokeLookup() {
 					loadAndFormatAPI();
 					fs.writeFile(path.resolve(__dirname, `../server/pokemonLookup.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
 						if (err){
-							reject(`Error thrown when writing the notify list file. Error: ${err}`);
+							reject(`Error thrown when writing the pokemon lookup file. Error: ${err}`);
 							return;
 						}
-						console.log("\nCould not find notifyList.json. Making a new one...");
-						list = require(`../server/${folder}/notifyList.json`);
-						serverLists.set(sId, list);
-						lookup.set(sId, folder);
+						console.log("\nCould not find pokemonLookup.json. Making a new one...");
+						list = require(`../server/pokemonLookup.json`);
+						pokemonLookup = list;
 						resolve(list);
 					});
 				}	else {
-					reject(`Error thrown when loading the notify list (2). Error: ${e}`);
+					reject(`Error thrown when loading the pokemon lookup (2). Error: ${e}`);
 					return;
 				}
 			}
 		});
 	});
 }
-function saveNotifyList(sId) {
+function savePokemonLookuo(sId) {
 	const folder = lookup.get(sId);
 	return new Promise((resolve) => {
 		fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
@@ -666,34 +665,63 @@ function saveNotifyList(sId) {
 }
 
 function loadAndFormatAPI() {
-	let xhr = new XMLHttpRequest();
-	xhr.open("GET", "https://fight.pokebattler.com/pokemon", [false]);
-	console.log("Loading pokebattler api...");
-	const pokemonLookup = {};
+  return new Promise((resolve, reject) => {
+  const https = require('https');
+ console.log("loading pokebattler")
+const options = {
+  hostname: 'fight.pokebattler.com',
+  port: 443,
+  path: '/pokemon',
+  method: 'GET',
+};
 
-	xhr.onload = function() {
-		console.log("Loaded. Status: ${xhr.status}");
-		const apiObj = JSON.parse(xhr.response);
+const req = https.request(options, res => {
+  console.log(`statusCode: ${res.statusCode}`);
 
-
-		for (const item of apiObj.pokemon) {
+  res.on('response', r => {
+    console.log(`loaded. ${r.statusCode}`);
+    const apiOBJ = JSON.parse(r);
+    for (const item of apiObj.pokemon) {
 			try {
 				pokemonLookup[item.pokemonId] = item.pokedex.pokemonNum;
 			} catch (e) {
 				console.log("failed to do: ", item)
 			}
-
 		}
-		console.log(Object.keys(pokemonLookup).length);
-		console.log(pokemonLookup);
+		console.log(pokemonLookup.size)
+		
+		const raidOptions = {
+		  hostname: 'fight.pokebattler.com',
+  port: 443,
+  path: '/raids',
+  method: 'GET',
+		}
+		
+		const raidReq = https.request(raidOptions, raidRes => {
+  console.log(`statusCode: ${raidRes.statusCode}`);
 
-	};
+  raidRes.on('response', rr => {
+    const raidObj = JSON.parse(rr);
+    for (const item of raidObj.tiers) {
+      
+    }
+  });
+		});
+		
+		raidReq.on('error', error => {
+  console.error(error);
+});
 
-	xhr.onerror = function() { // only triggers if the request couldn't be made at all
- 		console.log("Network Error");
-	};
+raidReq.end();
+  });
+});
 
-	xhr.send();
+req.on('error', error => {
+  console.error(error);
+});
+
+req.end();
+});
 //https://fight.pokebattler.com/pokemon
 }
 
