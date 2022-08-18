@@ -1,6 +1,6 @@
-const { loadNotifyList } = require("./notify.js"),
+const { loadNotifyList, loadPokemonLookup } = require("./notify.js"),
 			{ loadCleanupList } = require("./filter.js"),
-			{ loadRaidCatList } = require("./switchCat.js"),
+			{ loadRaidCatList } = require("./switchCat.js");
 			fs = require("fs"),
 			path = require("path"),
 			Discord = require("discord.js");
@@ -14,10 +14,11 @@ module.exports = {
 		for (const folder of serverFolders) {
 			console.log(`\nLoading "${folder}" server files...`);
 			const sId = await loadConfig(folder, client);
-			await loadNotifyList(folder, sId);
+			await loadNotifyList();
 			await loadCleanupList(folder, sId);
 			await loadRaidCatList(folder, sId);
 		}
+		await loadPokemonLookup();
 		loaded = true;
 	},
 };

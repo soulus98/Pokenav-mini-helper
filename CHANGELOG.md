@@ -1,5 +1,7 @@
 # v2.0 (2022-Aug-05)
 * Made the bot multi-server
+* Fixed `]n` and `]cn` to work without `$counters`
+* Added `]update-api` to update api when outdated
 
 # v1.3 (2022-Jul-07)
 * Made a raid announce channel category switcher for PokeNav

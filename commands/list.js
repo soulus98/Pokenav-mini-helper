@@ -67,7 +67,7 @@ module.exports = {
 				return;
 			case "notifications":
 			case "notis":
-				loadNotifyList(undefined, message.guild.id).then((list) => {
+				loadNotifyList().then((list) => {
 					const bossAmount = list.reduce((acc, g) => {
 						acc = acc + g.length;
 						return acc;

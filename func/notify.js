@@ -3,32 +3,33 @@ const Discord = require("discord.js"),
 			fs = require("fs"),
 			path = require("path"),
 			{ errorMessage, dateToTime, dev } = require("./misc.js");
-const serverLists = new Discord.Collection(),
-		lookup = new Discord.Collection();
-let pokemonLookup = new Discord.Collection();
+let notifyList = new Discord.Collection(),
+		pokemonLookup = new Discord.Collection();
 
 
 module.exports = {
 	async notify(message, args) {
-		const list = serverLists.get(message.guild.id);
-		if (hasDuplicates(args)) throw ["dupe"];
+		const list = notifyList;
 		console.log(`[${dateToTime(new Date())}]Beginning notification workflow for: ${args.join(", ")}`);
-		const checkedArgs = await argsCheck(args, list);
+		const [checkedArgs, removed] = await argsCheck(args, list);
+		if (hasDuplicates(checkedArgs)) throw ["dupe"];
 		if (!checkedArgs.length) throw ["already"];
 		const messageData = [];
-		const removedArgs = args.filter((v) => !checkedArgs.includes(v));
-		if (removedArgs.length) messageData.push(`The following bosses were found in the saved list: \`${removedArgs.join("`, `")}\``);
+		if (removed.length) messageData.push(`The following bosses were found in the saved list: \`${removed.join("`, `")}\``);
 		message.react("👀");
-		const [result, md] = await pokeNavCheck(checkedArgs, message);
-		md.forEach((item) => messageData.push(item));
-		if (typeof result == "string") throw [result, messageData];
+		const result = new Discord.Collection();
+		checkTier(checkedArgs, result, messageData, message);
+		if (messageData.length == args.length) throw ["none", messageData];
+		// const [result, md] = await pokeNavCheck(checkedArgs, message);
+		// md.forEach((item) => messageData.push(item));
+		// if (typeof result == "string") throw [result, messageData];
 		for (const [k, v] of result) {
 			if (hasDuplicates(v.map(i => i.name))) throw ["dupe", k];
 		}
-		await makeRoles(result, message).catch(console.error);
 		const md2 = await makeEmoji(result, message).catch(console.error);
 		md2.forEach((item) => messageData.push(item));
 		if (messageData.length == args.length) throw ["none", messageData];
+		await makeRoles(result, message).catch(console.error);
 		const newList = new Discord.Collection;
 		list.forEach((arr, key) => {
 			if (result.has(key)) {
@@ -52,7 +53,7 @@ module.exports = {
 			message.reply("I need an emoji or Soul needs to fix the emoji grabber thingy\nUsage is `]override <boss> <tier> [emoji]`");
 			return;
 		}
-		const list = serverLists.get(message.guild.id);
+		const list = notifyList;
 		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${boss}`);
 		for (const item of list) {
 			if (item[1].includes(boss)) throw ["already"];
@@ -75,13 +76,12 @@ module.exports = {
 		await module.exports.allNotificationServers(message.client, list);
 		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>`);
 	},
-	loadNotifyList(folder, sId) {
+	loadNotifyList() {
 		let list = new Discord.Collection();
-		if (!folder) folder = lookup.get(sId);
 		return new Promise(function(resolve, reject) {
 			new Promise((res) => {
 				try {
-					delete require.cache[require.resolve(`../server/${folder}/notifyList.json`)];
+					delete require.cache[require.resolve("../server/notifyList.json")];
 					res();
 				} catch (e){
 					if (e.code == "MODULE_NOT_FOUND") {
@@ -94,7 +94,7 @@ module.exports = {
 				}
 			}).then(() => {
 				try {
-					const jsonList = require(`../server/${folder}/notifyList.json`);
+					const jsonList = require("../server/notifyList.json");
 					for (const g in jsonList) {
 						list.set(g, jsonList[g]);
 					}
@@ -103,20 +103,18 @@ module.exports = {
 						return acc;
 					}, 0);
 					console.log(`Notification list loaded. It contains ${list.size} tiers with ${bossAmount} bosses.`);
-					serverLists.set(sId, list);
-					lookup.set(sId, folder);
+					notifyList = list;
 					resolve(list);
 				} catch (e) {
 					if (e.code == "MODULE_NOT_FOUND") {
-						fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
+						fs.writeFile(path.resolve(__dirname, "../server/notifyList.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
 							if (err){
 								reject(`Error thrown when writing the notify list file. Error: ${err}`);
 								return;
 							}
 							console.log("\nCould not find notifyList.json. Making a new one...");
-							list = require(`../server/${folder}/notifyList.json`);
-							serverLists.set(sId, list);
-							lookup.set(sId, folder);
+							list = require("../server/notifyList.json");
+							notifyList = list;
 							resolve(list);
 						});
 					}	else {
@@ -127,10 +125,9 @@ module.exports = {
 			});
 		});
 	},
-	saveNotifyList(sId) {
-		const folder = lookup.get(sId);
+	saveNotifyList() {
 		return new Promise((resolve) => {
-			fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
+			fs.writeFile(path.resolve(__dirname, "../server/notifyList.json"), JSON.stringify(Object.fromEntries(notifyList)), (err) => {
 				if (err){
 					errorMessage(new Date(), false, `Error: An error occured while saving the notify list. Error: ${err}`);
 					return;
@@ -141,13 +138,59 @@ module.exports = {
 			});
 		});
 	},
+	loadPokemonLookup() {
+		let list = new Discord.Collection();
+		return new Promise(function(resolve, reject) {
+			new Promise((res) => {
+				try {
+					delete require.cache[require.resolve("../server/pokemonLookup.json")];
+					res();
+				} catch (e){
+					if (e.code == "MODULE_NOT_FOUND" || e.code == "ENOENT") {
+						// do nothing
+						res();
+					} else {
+						reject(`Error thrown when loading pokemon lookup. Error: ${e}`);
+						return;
+					}
+				}
+			}).then(async () => {
+				try {
+					const jsonList = require("../server/pokemonLookup.json");
+					for (const g in jsonList) {
+						list.set(g, jsonList[g]);
+					}
+					console.log(`\nPokemon lookup loaded. It contains ${list.size} pokemon (and forms etc).`);
+					pokemonLookup = list;
+					resolve(list);
+				} catch (e) {
+					if (e.code == "MODULE_NOT_FOUND" || e.code == "ENOENT") {
+					console.log("\nCould not find pokemonLookup.json. Making a new one...");
+						list = await loadAndFormatAPI();
+						fs.writeFile(path.resolve(__dirname, "../server/pokemonLookup.json"), JSON.stringify(Object.fromEntries(list)), (err) => {
+							if (err){
+								reject(`Error thrown when writing the pokemon lookup file. Error: ${err}`);
+								return;
+							}
+							list = require("../server/pokemonLookup.json");
+							pokemonLookup = list;
+							resolve(list);
+						});
+					}	else {
+						reject(`Error thrown when loading the pokemon lookup (2). Error: ${e}\nCode: ${e.code}`);
+						return;
+					}
+				}
+			});
+		});
+	},
 	async addReactionRole(messageReaction, user){
-		const list = serverLists.get(messageReaction.message.guild.id);
+		const list = notifyList;
 		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
-			const roleName = "Notify" + emojiName;
+			const emojiName = messageReaction.emoji.name;
+			const roleName = emojiName + "Raid";
 			const tierArr = list.get(tier);
 			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
 			if (tierArr.map(i => i.name).includes(emojiName)) {
@@ -174,11 +217,11 @@ module.exports = {
 		}
 	},
 	async removeReactionRole(messageReaction, user){
-		const list = serverLists.get(messageReaction.message.guild.id);
+		const list = notifyList;
 		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
 			const tier = messageReaction.message.embeds[0]?.title;
-			const emojiName = messageReaction.emoji.name.replace(/_/g, "-");
+			const emojiName = messageReaction.emoji.name;
 			const roleName = "Notify" + emojiName;
 			const tierArr = list.get(tier);
 			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
@@ -206,51 +249,54 @@ module.exports = {
 		}
 	},
 	async clearNotify(message, args){
-		const list = serverLists.get(message.guild.id);
+		const list = notifyList;
 		console.log(`[${dateToTime(new Date())}]Clearing notification workflow for: ${args.join(", ")}`);
-		const newArgs = [...args];
 		message.react("👀");
 		if (args[0].toLowerCase() == "all") {
-			await deleteRoles(list, message);
-			await deleteEmoji(list, message);
-			serverLists.set(message.guild.id, new Discord.Collection());
+			notifyList = new Discord.Collection();
 			await module.exports.deleteNotificationReactions(message, "all");
+			await deleteRoles(list, message).catch(console.error);
+			await deleteEmoji(list, message).catch(console.error);
 			message.reply("Notifications removed.");
 			return;
 		}
-		if (hasDuplicates(args)) throw ["dupe"];
-		const tempList = new Discord.Collection();
-		for (const boss of args) {
-			const lcBoss = boss.toLowerCase();
-			for (const [tier, group] of list) {
-				const lcGroupNames = group.map(i => i.name).map(i => i.toLowerCase());
-				if (lcGroupNames.includes(lcBoss)) {
-					const realTierName = tier;
-					const realBoss = group[lcGroupNames.indexOf(lcBoss)];
-					const tempGroup = tempList.get(tier);
-					if (tempGroup) {
-						tempGroup.push(realBoss);
-						tempList.set(realTierName, tempGroup);
-					} else tempList.set(realTierName, [realBoss]);
-					newArgs.splice(newArgs.indexOf(boss), 1);
-				}
-			}
-		}
-		let result, messageData;
-		if (newArgs.length) [result, messageData] = await pokeNavCheck(newArgs, message);
-		if (result?.size) {
-			for (const [tier, group] of result) {
-				const tempGroup = tempList.get(tier);
-				let newGroup = group;
-				if (tempGroup) newGroup = group.concat(tempGroup).sort((a, b) => a.name - b.name);
-				tempList.set(tier, newGroup);
-			}
-		}
-		result = tempList;
-		await deleteRoles(result, message);
-		await deleteEmoji(result, message);
-		const newList = new Discord.Collection();
+		// const newArgs = [...args];
+		const [unFound, removable] = await argsCheck(args, list);
+		if (!removable.length) throw ["not found"];
+		if (hasDuplicates(removable)) throw ["dupe"];
+		const messageData = [];
+		if (unFound.length) messageData.push(`The following bosses were not found in the saved list: \`${unFound.join("`, `")}\``);
+		// const tempList = new Discord.Collection();
+		// for (const boss of args) {
+		// 	const lcBoss = boss.toLowerCase();
+		// 	for (const [tier, group] of list) {
+		// 		const lcGroupNames = group.map(i => i.name).map(i => i.toLowerCase());
+		// 		if (lcGroupNames.includes(lcBoss)) {
+		// 			const realTierName = tier;
+		// 			const realBoss = group[lcGroupNames.indexOf(lcBoss)];
+		// 			const tempGroup = tempList.get(tier);
+		// 			if (tempGroup) {
+		// 				tempGroup.push(realBoss);
+		// 				tempList.set(realTierName, tempGroup);
+		// 			} else tempList.set(realTierName, [realBoss]);
+		// 			newArgs.splice(newArgs.indexOf(boss), 1);
+		// 		}
+		// 	}
+		// }
+		// if (newArgs.length) [result, messageData] = await pokeNavCheck(newArgs, message);
+		// if (result?.size) {
+		// 	for (const [tier, group] of result) {
+		// 		const tempGroup = tempList.get(tier);
+		// 		let newGroup = group;
+		// 		if (tempGroup) newGroup = group.concat(tempGroup).sort((a, b) => a.name - b.name);
+		// 		tempList.set(tier, newGroup);
+		// 	}
+		// }
+		// result = tempList;
+		const result = new Discord.Collection();
+		checkTier(removable, result, messageData, message);
 		await module.exports.deleteNotificationReactions(message, result);
+		const newList = new Discord.Collection();
 		list.forEach((arr, tier) => {
 			if (result.has(tier)) {
 				const newArr = arr.filter((i) => !result.get(tier).map(i2 => i2.name).includes(i.name));
@@ -263,24 +309,25 @@ module.exports = {
 				newList.set(tier, arr);
 			}
 		});
+		await deleteEmoji(result, message).catch(console.error);
+		await deleteRoles(result, message).catch(console.error);
 		newList.sort(sortList);
-		serverLists.set(message.guild.id, newList);
+		notifyList = newList;
 		console.log("Updating saved list");
-		module.exports.saveNotifyList(message.guild.id).then(() => {
+		module.exports.saveNotifyList().then(() => {
 			return;
 		});
 		message.reply(`Notifications removed.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async makeNotificationReactions(server, newList){
-		const sId = server.id;
-		const ops = server.client.configs.get(sId);
+		const ops = server.client.configs.get(server.id);
 		const notifyChannel = await server.channels.fetch(ops.notifyReactionChannel);
-		if (!newList) newList = serverLists.get(sId);
+		if (!newList) newList = notifyList;
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
 			notifyChannel.bulkDelete(existingMessages).catch(console.error);
 			console.log("Saving blank list");
-			module.exports.saveNotifyList(sId);
+			module.exports.saveNotifyList();
 			return;
 		}
 		const existingIds = new Discord.Collection;
@@ -296,17 +343,18 @@ module.exports = {
 				message = await notifyChannel.messages.fetch(existingIds.get(tier));
 				await message.delete();
 				newList.delete(tier);
-				if (lastKey == tier) saveList(newList, sId);
+				if (lastKey == tier) saveList(newList);
 			} else {
 				if (existingIds.has(tier)) {
 					console.log(`Reacting to ${tier} message`);
 					message = await notifyChannel.messages.fetch(existingIds.get(tier));
 				} else {
-					console.log(`Sending a new ${tier} message and reacting`);
+					console.log(`Sending a new T${tier} message and reacting`);
 					const embed = new Discord.MessageEmbed()
-					.setTitle(tier)
-					.setDescription(`Click on a **${tier}** to be notified when a new raid is posted.\nClick it again to remove the notification.`)
+					.setDescription("Click on a raid boss to be notified when a new raid is posted.\nClick it again to remove the notification.")
 					.setColor(0xFF00FF);
+					if (tier == 5) embed.setTitle("Legendary & Mega Raid Bosses");
+					else embed.setTitle(`Tier ${tier} Raid Bosses`);
 					message = await notifyChannel.send({ embeds: [embed] });
 				}
 				for (const item of arr) {
@@ -322,7 +370,7 @@ module.exports = {
 							else newList.set(tier, newArr);
 						} else console.error(err);
 					});
-					if (lastKey == tier && arr.indexOf(item) == arr.length - 1) return saveList(newList, sId);
+					if (lastKey == tier && arr.indexOf(item) == arr.length - 1) return saveList(newList);
 				}
 			}
 		}
@@ -333,7 +381,7 @@ module.exports = {
 			const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
 			const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 			if (inputList == "all") return notifyChannel.bulkDelete(existingMessages).catch(console.error);
-			const deleteNames = inputList.map(v => v).flat().map((i) => i.name.replace(/-/g, "_"));
+			const deleteNames = inputList.map(v => v).flat().map((i) => i.name);
 			for (const [k1, msg] of existingMessages) {
 				const reactionsToDelete = msg.reactions.cache.filter((r) => deleteNames.includes(r.emoji.name));
 				if (reactionsToDelete.size == msg.reactions.cache.size) {
@@ -350,7 +398,6 @@ module.exports = {
 		}
 	},
 	async allNotificationServers(client, list) {
-		await loadPokemonLookup();
 		for (const [k, config] of client.configs) {
 			const server = await client.guilds.fetch(k);
 			if (config.notifyReactionChannel) await module.exports.makeNotificationReactions(server, list);
@@ -359,56 +406,118 @@ module.exports = {
 		}
 		return;
 	},
+	async updateAPI(){
+		pokemonLookup = new Discord.Collection();
+		await fs.promises.unlink(path.resolve(__dirname, "../server/pokemonLookup.json")).catch(console.error);
+		await module.exports.loadPokemonLookup().catch(console.error);
+		return;
+	},
 };
 
 async function argsCheck(args, list) {
-	let checkedArgs = args;
-	if (list.size == 0) return checkedArgs;
-	for (const item of list) {
-		checkedArgs = checkedArgs.filter((v) => !item[1].includes(v));
-		if (list.lastKey() == item[0]) return checkedArgs;
+	const upperArgs = args.map(name => name.toUpperCase());
+	const checkedArgs = [];
+	for (let name of upperArgs) {
+		if (name.includes("-")){
+			const splitName = name.split("-");
+			const firstSort = ["2022", "2023", "2024", "2025", "X", "Y"];
+			const secondSort = ["ALOLA", "ALOLAN", "GALARIAN", "GALAR", "HISUIAN", "HISUI", "SPEED", "ATTACK", "DEFENCE", "HERO", "BLACK", "WHITE", "BURN", "DOUSE", "SHOCK", "CHILL", "ALTERED", "ORIGIN", "INCARNATE", "THERIAN", "A", "COSTUME", "FEMALE", "MALE", "SPRING"];
+			splitName.sort((a, b) => {
+				if (firstSort.includes(a)) return 1;
+				if (firstSort.includes(b)) return -1;
+				if (a == "MEGA") return 1;
+				if (b == "MEGA") return -1;
+				if (secondSort.includes(a)) return 1;
+				if (secondSort.includes(b)) return -1;
+				return 0;
+			});
+			if (!splitName.includes("MEGA")) splitName.push("FORM");
+			if (splitName.includes("ALOLAN")) splitName[splitName.indexOf("ALOLAN")] = "ALOLA";
+			if (splitName.includes("GALAR")) splitName[splitName.indexOf("GALAR")] = "GALARIAN";
+			if (splitName.includes("HISUI")) splitName[splitName.indexOf("HISUI")] = "HISUIAN";
+			name = splitName.join("_");
+		}
+		checkedArgs.push(name);
+	}
+	const removed = [];
+	if (list.size == 0) return [checkedArgs, removed];
+	for (const [tier, arr] of list) {
+		for (const boss of checkedArgs) {
+			if (arr.find(i => i.name == boss)) {
+				checkedArgs.splice(checkedArgs.indexOf(boss));
+				removed.push(boss);
+			}
+		}
+		if (list.lastKey() == tier) return [checkedArgs, removed];
 	}
 }
-async function pokeNavCheck(data, message, messageData, i, result) {
+// async function pokeNavCheck(data, message, messageData, i, result) {
+// 	const ops = message.client.configs.get(message.guild.id);
+// 	if (!i) i = 0;
+// 	if (!result) result = new Discord.Collection;
+// 	if (!messageData) messageData = [];
+// 	const pokenavChannel = await message.guild.channels.fetch(ops.pokenavChannel);
+// 	return new Promise((resolve) => {
+// 		message.react("👀");
+// 		const mon = data[i];
+// 		console.log(`Checking ${mon} counters for tier`);
+// 		pokenavChannel.send(`<@428187007965986826> counters ${mon}`).then(() => {
+// 			const filter = m => {
+// 				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes("tier") || m.embeds[0]?.title.toLowerCase().includes("error"));
+// 			};
+// 			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then(async (resp) => {
+// 				try {
+// 					const emb = resp.first().embeds[0];
+// 					const respTitle = emb.title;
+// 					pokenavChannel.bulkDelete(2).catch(() => console.error("Could not delete a message in the pokenavChannel"));
+// 					const eURL = emb.thumbnail?.url;
+// 					if (respTitle == "Error") {
+// 						console.log(`${mon} was not found by pokenav.`);
+// 						messageData.push(`PokeNav could not find \`${mon}\`. Please try again for that boss or add manually using \`${ops.prefix}override\`.`);
+// 						pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
+// 					} else {
+// 						const tierLocation = respTitle.toLowerCase().indexOf("tier");
+// 						const tier = respTitle.slice(tierLocation, respTitle.length - 1);
+// 						const newMon = respTitle.slice(6, tierLocation - 2);
+// 						pushCheckLoop(data, message, messageData, i, result, tier, newMon, eURL).then(([r, m]) => resolve([r, m]));
+// 					}
+// 				} catch (e) {
+// 					return console.error("An unexpected error in ]notify. error:", e);
+// 				}
+// 			}).catch(() => {
+// 				console.log(`${mon} took more than 20 seconds for pokenav to find...?`);
+// 				messageData.push(`PokeNav did not respond quickly enough (or too quickly) for \`${mon}\`. Please try again for that boss.`);
+// 				pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
+// 			});
+// 		});
+// 	});
+// }
+
+async function checkTier(input, result, messageData, message) {
 	const ops = message.client.configs.get(message.guild.id);
-	if (!i) i = 0;
-	if (!result) result = new Discord.Collection;
-	if (!messageData) messageData = [];
-	const pokenavChannel = await message.guild.channels.fetch(ops.pokenavChannel);
-	return new Promise((resolve) => {
-		message.react("👀");
-		const mon = data[i];
-		console.log(`Checking ${mon} counters for tier`);
-		pokenavChannel.send(`<@428187007965986826> counters ${mon}`).then(() => {
-			const filter = m => {
-				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes("tier") || m.embeds[0]?.title.toLowerCase().includes("error"));
-			};
-			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then(async (resp) => {
-				try {
-					const emb = resp.first().embeds[0];
-					const respTitle = emb.title;
-					pokenavChannel.bulkDelete(2).catch(() => console.error("Could not delete a message in the pokenavChannel"));
-					const eURL = emb.thumbnail?.url;
-					if (respTitle == "Error") {
-						console.log(`${mon} was not found by pokenav.`);
-						messageData.push(`PokeNav could not find \`${mon}\`. Please try again for that boss or add manually using \`${ops.prefix}override\`.`);
-						pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
-					} else {
-						const tierLocation = respTitle.toLowerCase().indexOf("tier");
-						const tier = respTitle.slice(tierLocation, respTitle.length - 1);
-						const newMon = respTitle.slice(6, tierLocation - 2);
-						pushCheckLoop(data, message, messageData, i, result, tier, newMon, eURL).then(([r, m]) => resolve([r, m]));
-					}
-				} catch (e) {
-					return console.error("An unexpected error in ]notify. error:", e);
-				}
-			}).catch(() => {
-				console.log(`${mon} took more than 20 seconds for pokenav to find...?`);
-				messageData.push(`PokeNav did not respond quickly enough (or too quickly) for \`${mon}\`. Please try again for that boss.`);
-				pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
-			});
-		});
-	});
+	for (const bossName of input) {
+		if (!pokemonLookup.has(bossName)) {
+			messageData.push(`Boss :${bossName} was not found in the API. Please update the API or use \`${ops.prefix}override\``);
+			continue;
+		}
+		const rawTier = pokemonLookup.get(bossName).tiers[0];
+		let guessTier = 0;
+		if (rawTier.includes("5")) guessTier = "5";
+		else if (rawTier.includes("4")) guessTier = "4";
+		else if (rawTier.includes("3")) guessTier = "3";
+		else if (rawTier.includes("2")) guessTier = "2";
+		else if (rawTier.includes("1")) guessTier = "1";
+		else if (rawTier.includes("MEGA")) guessTier = "5";
+		else if (rawTier.includes("ULTRA")) guessTier = "5";
+		else if (rawTier.includes("UNSET")) {
+			messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
+			continue;
+		}
+		if (!result.has(guessTier)) result.set(guessTier, [{ name:bossName }]);
+		else {
+			result.get(guessTier).push({ name:bossName });
+		}
+	}
 }
 
 async function pushCheckLoop(data, message, messageData, i, result, tier, newMon, eURL) {
@@ -477,8 +586,8 @@ function makeRoles(input, message) {
     const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
-				const bossName = bossItem.name;
-				const roleName = "Notify" + bossName;
+				const bossName = bossItem.name.replace(/_/g, "-").replace("-FORM", "");
+				const roleName = bossName + "Raid";
 				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (!role) {
 					console.log(`Creating role: ${roleName}.`);
@@ -509,7 +618,7 @@ async function deleteRoles(input, message) {
 	for (const tier of input){
 		for (const bossItem of tier[1]) {
 			const bossName = bossItem.name;
-			const roleName = "Notify" + bossName;
+			const roleName = bossName + "Raid";
 			const role = message.guild.roles.cache.find(r => r.name == roleName);
 			if (role) {
 				console.log(`Deleting role: ${roleName}.`);
@@ -550,23 +659,37 @@ async function makeEmoji(input, message) {
 		const allEmoji = await emojiServer.emojis.fetch(undefined, { force: true });
 		for (const [k, v] of input) {
 			for (const item of v) {
-				const emojiName = item.name.replace(/-/g, "_");
-				const emoji = allEmoji.find(e => e.name == emojiName);
+				let num = pokemonLookup.get(item.name).num;
+				if (num > 8000) {
+					console.log(`${item.name} mega not found (>8000).`);
+					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. The API is likely out of date.`); //todo update api command
+					if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
+					else continue;
+				}
+				if (num < 9) num = "00" + num;
+				else if (num < 99) num = "0" + num;
+				const urlName = item.name.toLowerCase().replace(/_/g, "-").replace("-form", "");
+				const emoji = allEmoji.find(e => e.name == item.name);
+				const url = `https://static.pokenav.app/images/pokemon-icons/png/128/${num}-${urlName}.png`;
+				const backupUrl = `https://static.pokenav.app/images/pokemon-go-icons/png/128/${num}-${urlName}.png`;
 				if (emoji) {
 					console.log(`An Emoji named ${item.name} already existed on the emojiServer`);
 					item.identifier = emoji.identifier;
 				} else {
-					console.log(`Creating an Emoji named ${emojiName} on the emojiServer`);
-					const res = await emojiServer.emojis.create(item.url, item.name.replace(/-/g, "_")).then((e) => e.identifier).catch(err => err);
+					console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
+					const res = await emojiServer.emojis.create(url, item.name).then((e) => e.identifier).catch(err => err);
 					if (res.message?.includes("image: Invalid image data")) {
-						console.log(`${item.name} thumbnail was not available as an emoji.`);
-						messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
+						const res2 = await emojiServer.emojis.create(backupUrl, item.name).then((e) => e.identifier).catch(err => err);
+						if (res2.message?.includes("image: Invalid image data")) {
+							console.log(`${item.name} thumbnail was not available as an emoji.`);
+							messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
+						}
 					} else if (res.code == 50035) {
-						console.error(`I could not create an emoji for ${emojiName}. String validation regex. Tell Soul.`);
+						console.error(`I could not create an emoji for ${item.name}. String validation regex. Tell Soul.`);
 						console.error(res);
-						messageData.push(`String regex issue for ${emojiName}. Please tell <@${dev}>`);
+						messageData.push(`String regex issue for ${item.name}. Please tell <@${dev}>`);
 					} else if (res.code) {
-						console.error(`Cache may have fail when making an emoji for ${emojiName}. It might have already existed...?`, res);
+						console.error(`Cache may have fail when making an emoji for ${item.name}. It might have already existed...?`, res);
 					} else {
 						item.identifier = res;
 					}
@@ -584,7 +707,7 @@ async function deleteEmoji(input, message) {
 	for (const [k, v] of input) {
 		for (const item of v) {
 			const allEmoji = await emojiServer.emojis.fetch();
-			const emojiName = item.name.replace(/-/g, "_");
+			const emojiName = item.name;
 			const emoji = allEmoji.find((e) => e.name == emojiName);
 			await emojiServer.emojis.delete(emoji).then(() => console.log(`Deleted Emoji ${emojiName}`)).catch((e) => {
 				if (e.code == "INVALID_TYPE") console.error(`Error: could not delete emoji ${emojiName} as it didn't exist...?`);
@@ -595,134 +718,91 @@ async function deleteEmoji(input, message) {
 	}
 }
 
-function saveList(newList, sId){
+function saveList(newList){
 	newList.sort(sortList);
-	serverLists.set(sId, newList);
+	notifyList = newList;
 	console.log("Updating saved list");
-	module.exports.saveNotifyList(sId).then(() => {
+	module.exports.saveNotifyList().then(() => {
 		return;
 	});
 }
 
-function loadPokemonLookup() {
-  let list = new Discord.Collection();
-	return new Promise(function(resolve, reject) {
-		new Promise((res) => {
-			try {
-				delete require.cache[require.resolve("../server/pokemonLookup.json")];
-				res();
-			} catch (e){
-				if (e.code == "MODULE_NOT_FOUND") {
-					// do nothing
-					res();
-				} else {
-					reject(`Error thrown when loading pokemon lookup. Error: ${e}`);
-					return;
-				}
-			}
-		}).then(() => {
-			try {
-				const jsonList = require("../server/pokemonLookup.json");
-				for (const g in jsonList) {
-					list.set(g, jsonList[g]);
-				}
-				console.log(`pokemon lookup loaded. It contains ${list.size} pokemon.`);
-				resolve(list);
-			} catch (e) {
-				if (e.code == "MODULE_NOT_FOUND") {
-					loadAndFormatAPI();
-					fs.writeFile(path.resolve(__dirname, `../server/pokemonLookup.json`), JSON.stringify(Object.fromEntries(list)), (err) => {
-						if (err){
-							reject(`Error thrown when writing the pokemon lookup file. Error: ${err}`);
-							return;
-						}
-						console.log("\nCould not find pokemonLookup.json. Making a new one...");
-						list = require(`../server/pokemonLookup.json`);
-						pokemonLookup = list;
-						resolve(list);
-					});
-				}	else {
-					reject(`Error thrown when loading the pokemon lookup (2). Error: ${e}`);
-					return;
-				}
-			}
-		});
-	});
-}
-function savePokemonLookuo(sId) {
-	const folder = lookup.get(sId);
-	return new Promise((resolve) => {
-		fs.writeFile(path.resolve(__dirname, `../server/${folder}/notifyList.json`), JSON.stringify(Object.fromEntries(serverLists.get(sId))), (err) => {
-			if (err){
-				errorMessage(new Date(), false, `Error: An error occured while saving the notify list. Error: ${err}`);
-				return;
-			} else {
-				resolve();
-				return;
-			}
-		});
-	});
-}
-
 function loadAndFormatAPI() {
-  return new Promise((resolve, reject) => {
-  const https = require('https');
- console.log("loading pokebattler")
-const options = {
-  hostname: 'fight.pokebattler.com',
-  port: 443,
-  path: '/pokemon',
-  method: 'GET',
-};
+  return new Promise((resolve) => {
+  const https = require("https");
+	console.log("Loading pokebattler/pokemon API...");
+	const options = {
+		hostname: "fight.pokebattler.com",
+		port: 443,
+		path: "/pokemon",
+		method: "GET",
+	};
 
-const req = https.request(options, res => {
-  console.log(`statusCode: ${res.statusCode}`);
-
-  res.on('response', r => {
-    console.log(`loaded. ${r.statusCode}`);
-    const apiOBJ = JSON.parse(r);
-    for (const item of apiObj.pokemon) {
-			try {
-				pokemonLookup[item.pokemonId] = item.pokedex.pokemonNum;
-			} catch (e) {
-				console.log("failed to do: ", item)
-			}
-		}
-		console.log(pokemonLookup.size)
-		
-		const raidOptions = {
-		  hostname: 'fight.pokebattler.com',
-  port: 443,
-  path: '/raids',
-  method: 'GET',
-		}
-		
-		const raidReq = https.request(raidOptions, raidRes => {
-  console.log(`statusCode: ${raidRes.statusCode}`);
-
-  raidRes.on('response', rr => {
-    const raidObj = JSON.parse(rr);
-    for (const item of raidObj.tiers) {
-      
-    }
-  });
+	const req = https.request(options, res => {
+		console.log("Loaded pokemon");
+		if (res.statusCode != 200) console.log(`error...? statusCode: ${res.statusCode}`);
+		let body = "";
+		res.on("data", d => {
+			body += d;
 		});
-		
-		raidReq.on('error', error => {
-  console.error(error);
-});
 
-raidReq.end();
-  });
-});
+		res.on("end", () => {
+			const apiObj = JSON.parse(body);
+			for (const item of apiObj.pokemon) {
+				try {
+					if (item.pokemonId.includes("SHADOW_FORM")) continue;
+					pokemonLookup.set(item.pokemonId, { num: item.pokedex.pokemonNum });
+				} catch (e) {
+					console.log("failed to do: ", item);
+				}
+			}
 
-req.on('error', error => {
-  console.error(error);
-});
+			const raidOptions = {
+				hostname: "fight.pokebattler.com",
+				port: 443,
+				path: "/raids",
+				method: "GET",
+			};
+			console.log("Loading pokebattler/raids API...");
+			const raidReq = https.request(raidOptions, raidRes => {
+				console.log("Loaded raids");
+				if (raidRes.statusCode != 200) console.log(`error...? statusCode: ${raidRes.statusCode}`);
+				let rBody = "";
 
-req.end();
-});
-//https://fight.pokebattler.com/pokemon
+				raidRes.on("data", d => {
+					rBody += d;
+				});
+
+				raidRes.on("end", () => {
+					console.log("loaded raids");
+					const raidObj = JSON.parse(rBody);
+					for (const tier of raidObj.tiers) {
+						if (tier.raids.length == 0) continue;
+						for (const raid of tier.raids) {
+							let item = pokemonLookup.get(raid.pokemon);
+							if (item == undefined) item = { tiers: [], num: 0 };
+							if (item.tiers == undefined) item.tiers = [];
+							item.tiers.push(tier.tier);
+							pokemonLookup.set(raid.pokemon, item);
+						}
+					}
+					resolve(pokemonLookup);
+				});
+			});
+			raidReq.on("error", error => {
+				console.error(error);
+			});
+
+			raidReq.end();
+		});
+	});
+
+	req.on("error", error => {
+		console.error(error);
+	});
+
+	req.end();
+	});
 }
 
 function hasDuplicates(array) {
