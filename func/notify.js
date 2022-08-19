@@ -188,7 +188,7 @@ module.exports = {
 		const list = notifyList;
 		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
-			const tier = messageReaction.message.embeds[0]?.footer;
+			const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
 			const roleName = emojiName + "Raid";
 			const tierArr = list.get(tier);
@@ -220,7 +220,7 @@ module.exports = {
 		const list = notifyList;
 		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
-			const tier = messageReaction.message.embeds[0]?.footer;
+			const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
 			const roleName = "Notify" + emojiName;
 			const tierArr = list.get(tier);
