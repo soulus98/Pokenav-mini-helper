@@ -145,7 +145,7 @@ client.once("ready", async () => {
 	console.error("Reconnecting...");
 })
 .on("channelCreate", async (channel) => {
-	if (!intendedServers.includes(message.guild.id)) return;
+	if (!intendedServers.includes(channel.guild.id)) return;
 	await checkCategory(channel);
 });
 
