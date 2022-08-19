@@ -85,6 +85,7 @@ client.once("ready", async () => {
 	console.log("\n======================================================================================\n");
 })
 .on("messageCreate", async (message) => {
+	if (!intendedServers.includes(message.guild.id)) return;
 	const ops = client.configs.get(message.guild.id);
 	await checkCleanupList(message);
 	if (message.author.bot && message.author.id != "155149108183695360") return; // Bot? Cancel
