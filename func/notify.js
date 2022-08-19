@@ -546,7 +546,7 @@ function makeRoles(input, message) {
     const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
-				const bossName = bossItem.name.replace(/_/g, "-").replace("-FORM", "");
+				const bossName = bossItem.name.replace("_FORM", "");
 				const roleName = bossName + "Raid";
 				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (!role) {
