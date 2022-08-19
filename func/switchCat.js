@@ -8,6 +8,7 @@ let timedOut = false;
 
 module.exports = {
   async checkCategory(channel){
+		console.log(serverLists);
 		const list = serverLists.get(channel.guild.id);
 		const ops = channel.client.configs.get(channel.guild.id);
 		const oldCategoryId = channel.parentId;
