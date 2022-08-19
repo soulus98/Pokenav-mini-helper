@@ -60,12 +60,6 @@ load();
 client.once("ready", async () => {
 	await client.guilds.fetch();
 	const vipserver = await client.guilds.fetch("1000767941631017051");
-const pokenavchannel = await vipserver.channels.fetch("1000770599154622584");
-const array = ["ZACIAN_HERO_FORMRaid", "ZAMAZENTA_HERO_FORMRaid","PIKACHURaid","FARFETCHD_GALARIAN_FORMRaid","MARILLRaid", "BARBOACHRaid","TIMBURRRaid","SCRAGGYRaid","PRIMEAPERaid","LICKITUNGRaid","SKARMORYRaid","MEGA_SLOWBRORaid"];
-for (const boss of array) {
-	pokenavchannel.send(`<@428187007965986826> create notify-rule ${boss} "boss:${boss.slice(0, -4).replace("_FORM", "")}"`);
-  vipserver.roles.create({ name: boss, mentionable: true });
-}
 	for (const [k, config] of client.configs) {
 		const server = await client.guilds.fetch(k);
 		intendedServers.push(k);
