@@ -115,12 +115,14 @@ client.once("ready", async () => {
 })
 .on("messageReactionAdd", (messageReaction, user) => {
 	const ops = client.configs.get(messageReaction.message.guild.id);
+	if (!ops) return;
 	if (user.bot) return;
 	if (messageReaction.message.channel.id == ops.notifyReactionChannel) addReactionRole(messageReaction, user);
 	return;
 })
 .on("messageReactionRemove", (messageReaction, user) => {
 	const ops = client.configs.get(messageReaction.message.guild.id);
+	if (!ops) return;
 	if (user.bot) return;
 	if (messageReaction.message.channel.id == ops.notifyReactionChannel) removeReactionRole(messageReaction, user);
 	return;
@@ -143,6 +145,7 @@ client.once("ready", async () => {
 	console.error("Reconnecting...");
 })
 .on("channelCreate", async (channel) => {
+	if (!intendedServers.includes(message.guild.id)) return;
 	await checkCategory(channel);
 });
 
