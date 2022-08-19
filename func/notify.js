@@ -188,7 +188,7 @@ module.exports = {
 		const list = notifyList;
 		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
-			const tier = messageReaction.message.embeds[0]?.title;
+			const tier = messageReaction.message.embeds[0]?.footer;
 			const emojiName = messageReaction.emoji.name;
 			const roleName = emojiName + "Raid";
 			const tierArr = list.get(tier);
@@ -220,7 +220,7 @@ module.exports = {
 		const list = notifyList;
 		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
 		try {
-			const tier = messageReaction.message.embeds[0]?.title;
+			const tier = messageReaction.message.embeds[0]?.footer;
 			const emojiName = messageReaction.emoji.name;
 			const roleName = "Notify" + emojiName;
 			const tierArr = list.get(tier);
@@ -332,7 +332,7 @@ module.exports = {
 		}
 		const existingIds = new Discord.Collection;
 		existingMessages.forEach((item, k) => {
-			if (item.embeds[0]) existingIds.set(item.embeds[0].title, k);
+			if (item.embeds[0]) existingIds.set(item.embeds[0].footer.text, k);
 		});
 		console.log("Checking and adding reactions");
 		const lastKey = newList.lastKey();
@@ -346,13 +346,14 @@ module.exports = {
 				if (lastKey == tier) saveList(newList);
 			} else {
 				if (existingIds.has(tier)) {
-					console.log(`Reacting to ${tier} message`);
+					console.log(`Reacting to T${tier} message`);
 					message = await notifyChannel.messages.fetch(existingIds.get(tier));
 				} else {
 					console.log(`Sending a new T${tier} message and reacting`);
 					const embed = new Discord.MessageEmbed()
 					.setDescription("Click on a raid boss to be notified when a new raid is posted.\nClick it again to remove the notification.")
-					.setColor(0xFF00FF);
+					.setColor(0xFF00FF)
+					.setFooter({ text: tier });
 					if (tier == 5) embed.setTitle("Legendary & Mega Raid Bosses");
 					else embed.setTitle(`Tier ${tier} Raid Bosses`);
 					message = await notifyChannel.send({ embeds: [embed] });
@@ -451,47 +452,6 @@ async function argsCheck(args, list) {
 		if (list.lastKey() == tier) return [checkedArgs, removed];
 	}
 }
-// async function pokeNavCheck(data, message, messageData, i, result) {
-// 	const ops = message.client.configs.get(message.guild.id);
-// 	if (!i) i = 0;
-// 	if (!result) result = new Discord.Collection;
-// 	if (!messageData) messageData = [];
-// 	const pokenavChannel = await message.guild.channels.fetch(ops.pokenavChannel);
-// 	return new Promise((resolve) => {
-// 		message.react("👀");
-// 		const mon = data[i];
-// 		console.log(`Checking ${mon} counters for tier`);
-// 		pokenavChannel.send(`<@428187007965986826> counters ${mon}`).then(() => {
-// 			const filter = m => {
-// 				return m.author.id == 428187007965986826 && (m.embeds[0]?.title.toLowerCase().includes("tier") || m.embeds[0]?.title.toLowerCase().includes("error"));
-// 			};
-// 			pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] }).then(async (resp) => {
-// 				try {
-// 					const emb = resp.first().embeds[0];
-// 					const respTitle = emb.title;
-// 					pokenavChannel.bulkDelete(2).catch(() => console.error("Could not delete a message in the pokenavChannel"));
-// 					const eURL = emb.thumbnail?.url;
-// 					if (respTitle == "Error") {
-// 						console.log(`${mon} was not found by pokenav.`);
-// 						messageData.push(`PokeNav could not find \`${mon}\`. Please try again for that boss or add manually using \`${ops.prefix}override\`.`);
-// 						pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
-// 					} else {
-// 						const tierLocation = respTitle.toLowerCase().indexOf("tier");
-// 						const tier = respTitle.slice(tierLocation, respTitle.length - 1);
-// 						const newMon = respTitle.slice(6, tierLocation - 2);
-// 						pushCheckLoop(data, message, messageData, i, result, tier, newMon, eURL).then(([r, m]) => resolve([r, m]));
-// 					}
-// 				} catch (e) {
-// 					return console.error("An unexpected error in ]notify. error:", e);
-// 				}
-// 			}).catch(() => {
-// 				console.log(`${mon} took more than 20 seconds for pokenav to find...?`);
-// 				messageData.push(`PokeNav did not respond quickly enough (or too quickly) for \`${mon}\`. Please try again for that boss.`);
-// 				pushCheckLoop(data, message, messageData, i, result).then(([r, m]) => resolve([r, m]));
-// 			});
-// 		});
-// 	});
-// }
 
 async function checkTier(input, result, messageData, message) {
 	const ops = message.client.configs.get(message.guild.id);
@@ -678,9 +638,9 @@ async function makeEmoji(input, message) {
 				} else {
 					console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
 					const res = await emojiServer.emojis.create(url, item.name).then((e) => e.identifier).catch(err => err);
-					if (res.message?.includes("image: Invalid image data")) {
+					if (res.message?.includes("image: Invalid image data") || res.code == "EMOJI_TYPE") {
 						const res2 = await emojiServer.emojis.create(backupUrl, item.name).then((e) => e.identifier).catch(err => err);
-						if (res2.message?.includes("image: Invalid image data")) {
+						if (res2.message?.includes("image: Invalid image data") || res.code == "EMOJI_TYPE") {
 							console.log(`${item.name} thumbnail was not available as an emoji.`);
 							messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
 						}
