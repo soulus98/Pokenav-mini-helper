@@ -222,7 +222,7 @@ module.exports = {
 		try {
 			const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
-			const roleName = "Notify" + emojiName;
+			const roleName = emojiName + "Raid";
 			const tierArr = list.get(tier);
 			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
 			if (tierArr.map(i => i.name).includes(emojiName)) {
