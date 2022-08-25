@@ -59,7 +59,6 @@ load();
 
 client.once("ready", async () => {
 	await client.guilds.fetch();
-	const vipserver = await client.guilds.fetch("1000767941631017051");
 	for (const [k, config] of client.configs) {
 		const server = await client.guilds.fetch(k);
 		intendedServers.push(k);
