@@ -3,6 +3,9 @@
 * Fixed `]n` and `]cn` to work without `$counters`
 * Added `]update-api` to update api when outdated
 
+#### v2.0.1 (2022-Jul-13)
+* Added a **mentionable** toggle for role creation
+
 # v1.3 (2022-Jul-07)
 * Made a raid announce channel category switcher for PokeNav
  * Use `arc` and `rrc` to link categories to announce channels, and when they reach **catLimit** channels, it will swap to another linked category, so long as that category has less than half of **catLimit** channels

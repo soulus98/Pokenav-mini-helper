@@ -551,7 +551,7 @@ function makeRoles(input, message) {
 				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (!role) {
 					console.log(`Creating role: ${roleName}.`);
-					message.guild.roles.create({ name: roleName, mentionable: false }).then(() => {
+					message.guild.roles.create({ name: roleName, mentionable: ops.mentionable || false }).then(() => {
 						pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
 							msg.delete();
 							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
@@ -622,7 +622,7 @@ async function makeEmoji(input, message) {
 				let num = pokemonLookup.get(item.name).num;
 				if (num > 8000) {
 					console.log(`${item.name} mega not found (>8000).`);
-					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. The API is likely out of date.`); //todo update api command
+					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`]api\` or use \`]override\`.`); //todo update api command
 					if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
 					else continue;
 				}
