@@ -546,13 +546,14 @@ function makeRoles(input, message) {
     const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
-				const bossName = bossItem.name.replace("_FORM", "");
-				const roleName = bossName + "Raid";
+				const name = bossItem.name.replace("_FORM", "");
+				const roleName = name + "Raid";
+				const bossName = name.replace(/_/g, "-");
 				const role = message.guild.roles.cache.find(r => r.name == roleName);
 				if (!role) {
 					console.log(`Creating role: ${roleName}.`);
 					message.guild.roles.create({ name: roleName, mentionable: ops.mentionable || false }).then(() => {
-						pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName.replace(/_/g, "-")}"`).then((msg) => {
+						pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
 							msg.delete();
 							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 								resolve();
