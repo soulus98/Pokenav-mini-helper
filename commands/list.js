@@ -81,7 +81,7 @@ module.exports = {
 						data.push(`\n\n**${group}:**\n`);
 						if (arr.length == 0) data.push("No bosses");
 						else arr.forEach((item) => {
-							data.push(`<:${item.identifier}>`);
+							data.push(`${item.name} `);
 						});
 					});
 					message.reply(data.join(""));
