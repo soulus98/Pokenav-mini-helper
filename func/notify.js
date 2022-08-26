@@ -541,7 +541,7 @@ async function pokeNavOverrideCheck(boss, message) {
 
 function makeRoles(input, message) {
 	console.log("Making/checking roles & rules");
-  return new Promise((resolve) => {
+  return new Promise(async (resolve) => {
     const client = message.client;
     for (const [sId, config] of client.configs) {
       const server = await client.guilds.fetch(sId);
