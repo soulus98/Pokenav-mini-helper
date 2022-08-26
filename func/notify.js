@@ -544,7 +544,7 @@ function makeRoles(input, message) {
   return new Promise((resolve) => {
     const client = message.client;
     for (const [sId, config] of client.configs) {
-      const server = client.guilds.fetch(sId);
+      const server = await client.guilds.fetch(sId);
     const pokenavChannel = server.channels.cache.get(config.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
