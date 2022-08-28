@@ -485,18 +485,20 @@ async function checkTier(input, result, messageData, message) {
 
 function makeRoles(input, message) {
 	console.log("Making/checking roles & rules");
-  return new Promise((resolve) => {
-		const ops = message.client.configs.get(message.guild.id);
-    const pokenavChannel = message.guild.channels.cache.get(ops.pokenavChannel);
+  return new Promise(async (resolve) => {
+    const client = message.client;
+    for (const [sId, config] of client.configs) {
+      const server = await client.guilds.fetch(sId);
+    const pokenavChannel = server.channels.cache.get(config.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
 				const name = bossItem.name.replace("_FORM", "");
 				const roleName = name + "Raid";
 				const bossName = name.replace(/_/g, "-");
-				const role = message.guild.roles.cache.find(r => r.name == roleName);
+				const role = server.roles.cache.find(r => r.name == roleName);
 				if (!role) {
-					console.log(`Creating role: ${roleName}.`);
-					message.guild.roles.create({ name: roleName, mentionable: ops.mentionable || false }).then(() => {
+					console.log(`[${server.name}]: Creating role: ${roleName}.`);
+					server.roles.create({ name: roleName, mentionable: config.mentionable || false }).then(() => {
 						pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
 							msg.delete();
 							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
@@ -508,13 +510,14 @@ function makeRoles(input, message) {
 					console.log(`Role: ${roleName} already exists.`);
 					pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
 						msg.delete();
-						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+						if (sId == client.configs.lastKey() && tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							resolve();
 						}
 					});
 				}
 			}
 		}
+    }
   });
 }
 
