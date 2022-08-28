@@ -262,8 +262,6 @@ module.exports = {
 		}
 		// const newArgs = [...args];
 		const [unfound, removable] = await argsCheck(args, list);
-		console.log("unfound", unfound);
-		console.log("removable", removable);
 		if (!removable.length) throw ["not found"];
 		if (hasDuplicates(removable)) throw ["dupe"];
 		const messageData = [];
@@ -297,7 +295,6 @@ module.exports = {
 		// result = tempList;
 		const result = new Discord.Collection();
 		checkTier(removable, result, messageData, message);
-		console.log("result", result);
 		await module.exports.deleteNotificationReactions(message, result);
 		const newList = new Discord.Collection();
 		list.forEach((arr, tier) => {
@@ -483,13 +480,12 @@ async function checkTier(input, result, messageData, message) {
 	}
 }
 
-function makeRoles(input, message) {
+async function makeRoles(input, message) {
 	console.log("Making/checking roles & rules");
-  return new Promise(async (resolve) => {
-    const client = message.client;
-    for (const [sId, config] of client.configs) {
-      const server = await client.guilds.fetch(sId);
-    const pokenavChannel = server.channels.cache.get(config.pokenavChannel);
+  const client = message.client;
+  for (const [sId, config] of client.configs) {
+    const server = await client.guilds.fetch(sId);
+		const pokenavChannel = server.channels.cache.get(config.pokenavChannel);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
 				const name = bossItem.name.replace("_FORM", "");
@@ -498,61 +494,56 @@ function makeRoles(input, message) {
 				const role = server.roles.cache.find(r => r.name == roleName);
 				if (!role) {
 					console.log(`[${server.name}]: Creating role: ${roleName}.`);
-					server.roles.create({ name: roleName, mentionable: config.mentionable || false }).then(() => {
-						pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
-							msg.delete();
-							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-								resolve();
-							}
-						});
-					}).catch();
+					await server.roles.create({ name: roleName, mentionable: config.mentionable || false });
 				} else {
-					console.log(`Role: ${roleName} already exists.`);
-					pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`).then((msg) => {
-						msg.delete();
-						if (sId == client.configs.lastKey() && tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-							resolve();
-						}
-					});
+					console.log(`[${server.name}]: Role: ${roleName} already exists.`);
+				}
+				const msg = await pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`);
+				msg.delete();
+				if (sId == client.configs.lastKey() && tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+					return;
 				}
 			}
 		}
-    }
-  });
+  }
 }
 
 async function deleteRoles(input, message) {
 	console.log("Deleteing roles & rules");
-	for (const tier of input){
-		for (const bossItem of tier[1]) {
-			const bossName = bossItem.name;
-			const roleName = bossName + "Raid";
-			const role = message.guild.roles.cache.find(r => r.name == roleName);
-			if (role) {
-				console.log(`Deleting role: ${roleName}.`);
-				const startDeleteTime = Date.now();
-				await message.guild.roles.delete(role).then(() => {
-					if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-						return;
-					}
-				}).catch((err) => {
-					if (err.code == 500) {
-						console.error(`[${dateToTime(new Date())}]: Error: I could not delete the ${roleName} role. Timeout`);
-						message.reply(`I timed out after 3 tries on ${bossName}. Please try again for that boss.`);
+	const client = message.client;
+	for (const [sId] of client.configs) {
+    const server = await client.guilds.fetch(sId);
+		for (const tier of input){
+			for (const bossItem of tier[1]) {
+				const bossName = bossItem.name;
+				const roleName = bossName + "Raid";
+				const role = server.roles.cache.find(r => r.name == roleName);
+				if (role) {
+					console.log(`[${server.name}]: Deleting role: ${roleName}.`);
+					const startDeleteTime = Date.now();
+					await server.roles.delete(role).then(() => {
 						if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 							return;
 						}
-					} else {
-						console.error(`Error deleting ${roleName}`);
-						console.error((Date.now() - startDeleteTime) / 1000, "seconds");
-						console.error(role);
-						throw err;
+					}).catch((err) => {
+						if (err.code == 500) {
+							console.error(`[${server.name}]: [${dateToTime(new Date())}]: Error: I could not delete the ${roleName} role. Timeout`);
+							message.reply(`I timed out after 3 tries on ${bossName}. Please try again for that boss.`);
+							if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+								return;
+							}
+						} else {
+							console.error(`[${server.name}]: Error deleting ${roleName}`);
+							console.error((Date.now() - startDeleteTime) / 1000, "seconds");
+							console.error(role);
+							throw err;
+						}
+					});
+				} else {
+					console.log(`[${server.name}]: Role: ${roleName} didn't exist.`);
+					if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
+						return;
 					}
-				});
-			} else {
-				console.log(`Role: ${roleName} didn't exist.`);
-				if (tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
-					return;
 				}
 			}
 		}
@@ -591,6 +582,13 @@ async function makeEmoji(input, message) {
 						if (res2.message?.includes("image: Invalid image data") || res.code == "EMOJI_TYPE") {
 							console.log(`${item.name} thumbnail was not available as an emoji.`);
 							messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
+						} else if (res2.message) {
+							console.error(`I could not create an emoji for ${item.name}. Unknown error. Tell Soul.`);
+							console.error("Error 1:");
+							console.error(res);
+							console.error("Error 2:");
+							console.error(res2);
+							messageData.push(`Unknown Emoji ${item.name}. Please tell <@${dev}>`);
 						}
 					} else if (res.code == 50035) {
 						console.error(`I could not create an emoji for ${item.name}. String validation regex. Tell Soul.`);
