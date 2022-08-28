@@ -261,11 +261,13 @@ module.exports = {
 			return;
 		}
 		// const newArgs = [...args];
-		const [unFound, removable] = await argsCheck(args, list);
+		const [unfound, removable] = await argsCheck(args, list);
+		console.log("unfound", unfound);
+		console.log("removable", removable);
 		if (!removable.length) throw ["not found"];
 		if (hasDuplicates(removable)) throw ["dupe"];
 		const messageData = [];
-		if (unFound.length) messageData.push(`The following bosses were not found in the saved list: \`${unFound.join("`, `")}\``);
+		if (unfound.length) messageData.push(`The following bosses were not found in the saved list: \`${unfound.join("`, `")}\``);
 		// const tempList = new Discord.Collection();
 		// for (const boss of args) {
 		// 	const lcBoss = boss.toLowerCase();
@@ -295,6 +297,7 @@ module.exports = {
 		// result = tempList;
 		const result = new Discord.Collection();
 		checkTier(removable, result, messageData, message);
+		console.log("result", result);
 		await module.exports.deleteNotificationReactions(message, result);
 		const newList = new Discord.Collection();
 		list.forEach((arr, tier) => {
@@ -440,16 +443,16 @@ async function argsCheck(args, list) {
 		}
 		checkedArgs.push(name);
 	}
-	const removed = [];
-	if (list.size == 0) return [checkedArgs, removed];
+	if (list.size == 0) return [checkedArgs, []];
+	const found = [];
 	for (const [tier, arr] of list) {
 		for (const boss of checkedArgs) {
 			if (arr.find(i => i.name == boss)) {
-				checkedArgs.splice(checkedArgs.indexOf(boss));
-				removed.push(boss);
+				found.push(boss);
 			}
 		}
-		if (list.lastKey() == tier) return [checkedArgs, removed];
+		const unfound = checkedArgs.filter(i => !found.includes(i));
+		if (list.lastKey() == tier) return [unfound, found];
 	}
 }
 
@@ -477,65 +480,6 @@ async function checkTier(input, result, messageData, message) {
 		else {
 			result.get(guessTier).push({ name:bossName });
 		}
-	}
-}
-
-async function pushCheckLoop(data, message, messageData, i, result, tier, newMon, eURL) {
-	if (tier) {
-		let group = result.get(tier);
-		if (!group) group = [];
-		group.push({ name: newMon, url: eURL });
-		result.set(tier, group);
-	}
-	if (i == data.length - 1) {
-		if (result.size > 0) {
-			return [result, messageData];
-		} else {
-			return ["none", messageData];
-		}
-	} else {
-		i++;
-		return await pokeNavCheck(data, message, messageData, i, result);
-	}
-}
-
-async function pokeNavOverrideCheck(boss, message) {
-	const ops = message.client.configs.get(message.guild.id);
-	const pokenavChannel = await message.guild.channels.fetch(ops.pokenavChannel);
-	message.react("👀");
-	console.log(`Checking ${boss} counters for tier`);
-	await pokenavChannel.send(`<@428187007965986826> dex ${boss}`);
-	const filter = m => {
-		return m.author.id == 428187007965986826 && (m.embeds[0]?.thumbnail?.url.includes("pokenav.app") || m.embeds[0]?.title.toLowerCase().includes("error"));
-	};
-	let resp;
-	try {
-		resp = await pokenavChannel.awaitMessages({ filter, max: 1, time: 20000, errors: ["time"] });
-	} catch {
-		console.log(`${boss} took more than 20 seconds for pokenav to find...?`);
-		message.reply(`PokeNav did not respond quickly enough (or too quickly) for \`${boss}\`. Please try again.`);
-		return false;
-	}
-	try {
-		const emb = resp.first().embeds[0];
-		const respTitle = emb.title;
-		pokenavChannel.bulkDelete(2).catch(() => console.error("Could not delete a message in the pokenavChannel"));
-		const eURL = emb.thumbnail?.url;
-		if (respTitle == "Error") {
-			console.log(`${boss} was not found by pokenav.`);
-			message.reply(`PokeNav could not find \`${boss}\`. Please try again for that boss.`);
-			return false;
-		} else {
-			let newMon;
-			if (respTitle.includes("✨")) {
-				newMon = respTitle.slice(6, -2);
-			} else {
-				newMon = respTitle.slice(6);
-			}
-			return [newMon, eURL];
-		}
-	} catch (e) {
-		return console.error("An unexpected error in ]notify. error:", e);
 	}
 }
 
