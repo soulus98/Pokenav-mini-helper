@@ -41,6 +41,7 @@ module.exports = {
 					message.channel.send(`<@&${ops.modRole}> Maximum channels reached in the category.\nTell the techs/admins that they need to link more categories.`);
 					return deleteMessage(message);
 				}
+				if (message.embeds[0]?.title?.startsWith("Please use /raid instead")) return deleteMessage(message);
 				if (
 				message.embeds[0]?.title?.toLowerCase().includes("raid")
 				|| message.embeds[0]?.author?.name?.toLowerCase().includes("raid")
