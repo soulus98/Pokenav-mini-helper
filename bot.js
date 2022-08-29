@@ -67,6 +67,26 @@ client.once("ready", async () => {
 			continue;
 		}
 	}
+	const isUpperCase = (string) => /^[A-Z]*$/.test(string);
+	for (const g of client.guilds) {
+	  if (!intendedServers.includes(g.id)) return;
+	  const roles = await g.roles.fetch();
+	  for (const r of roles) {
+	    rName = r.name;
+	    if (!rName.endsWith("Raid")) return;
+	    if (!isUpperCase(rName[1])) return;
+	    let nameArr;
+	    let newName;
+	    if (rName.includes("-")) { 
+	      nameArr = rName.split("-");
+	      for (let word of nameArr) {
+	        word = 
+	      }
+	      newName
+	    }
+	    console.log();
+	  }
+	}
 	allNotificationServers(client).catch((err) => console.error(err));
 	const emojiServer = await client.guilds.cache.has("994034906306969691");
 	const activeServers = client.guilds.cache;
