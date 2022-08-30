@@ -190,7 +190,11 @@ module.exports = {
 		try {
 			const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
-			const roleName = emojiName + "Raid";
+			const newName = emojiName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
+				function(txt) {
+					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+				});
+			const roleName = newName + "Raid";
 			const tierArr = list.get(tier);
 			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
 			if (tierArr.map(i => i.name).includes(emojiName)) {
@@ -222,7 +226,11 @@ module.exports = {
 		try {
 			const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
-			const roleName = emojiName + "Raid";
+			const newName = emojiName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
+				function(txt) {
+					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+				});
+			const roleName = newName + "Raid";
 			const tierArr = list.get(tier);
 			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
 			if (tierArr.map(i => i.name).includes(emojiName)) {
@@ -486,10 +494,10 @@ async function makeRoles(input, message) {
   for (const [sId, config] of client.configs) {
     const server = await client.guilds.fetch(sId);
 		const pokenavChannel = server.channels.cache.get(config.pokenavChannel);
-		for (const tier of input){
+		for (const tier of input) {
 			for (const bossItem of tier[1]) {
 				const name = bossItem.name.replace("_FORM", "");
-				const roleName = name + "Raid";
+				const roleName = newName + "Raid";
 				const bossName = name.replace(/_/g, "-");
 				const role = server.roles.cache.find(r => r.name == roleName);
 				if (!role) {
@@ -516,7 +524,11 @@ async function deleteRoles(input, message) {
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
 				const bossName = bossItem.name;
-				const roleName = bossName + "Raid";
+				const newName = bossName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
+				function(txt) {
+					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+				});
+				const roleName = newName + "Raid";
 				const role = server.roles.cache.find(r => r.name == roleName);
 				if (role) {
 					console.log(`[${server.name}]: Deleting role: ${roleName}.`);
