@@ -76,13 +76,9 @@ client.once("ready", async () => {
 			const rName = r.name;
 			if (!rName.endsWith("Raid")) continue;
 			if (!isUpperCase(rName[1])) continue;
-			let newName;
-			if (rName.includes("-") || rName.includes("_")) {
-				newName = rName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
-				function(txt) {
+			let newName = rName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi, (txt) => {
 					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
 				});
-			} else newName = rName.charAt(0).toUpperCase() + rName.substr(1).toLowerCase();
 			newName = newName.slice(0, -4) + "R" + newName.slice(-3);
 			console.log(rName, `${(rName.length < 13) ? "\t" : ""}\t=>`, newName);
 		}
