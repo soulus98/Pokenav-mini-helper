@@ -67,25 +67,25 @@ client.once("ready", async () => {
 			continue;
 		}
 	}
+	const allGuilds = client.guilds.cache;
 	const isUpperCase = (string) => /^[A-Z]*$/.test(string);
-	for (const g of client.guilds) {
-	  if (!intendedServers.includes(g.id)) return;
-	  const roles = await g.roles.fetch();
-	  for (const r of roles) {
-	    rName = r.name;
-	    if (!rName.endsWith("Raid")) return;
-	    if (!isUpperCase(rName[1])) return;
-	    let nameArr;
-	    let newName;
-	    if (rName.includes("-")) { 
-	      nameArr = rName.split("-");
-	      for (let word of nameArr) {
-	        word = 
-	      }
-	      newName
-	    }
-	    console.log();
-	  }
+	for (const [gId, g] of allGuilds) {
+		if (!intendedServers.includes(gId)) continue;
+		const roles = await g.roles.fetch();
+		for (const [rId, r] of roles) {
+			const rName = r.name;
+			if (!rName.endsWith("Raid")) continue;
+			if (!isUpperCase(rName[1])) continue;
+			let newName;
+			if (rName.includes("-") || rName.includes("_")) {
+				newName = rName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
+				function(txt) {
+					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+				});
+			} else newName = rName.charAt(0).toUpperCase() + rName.substr(1).toLowerCase();
+			newName = newName.slice(0, -4) + "R" + newName.slice(-3);
+			console.log(rName, `${(rName.length < 13) ? "\t" : ""}\t=>`, newName);
+		}
 	}
 	allNotificationServers(client).catch((err) => console.error(err));
 	const emojiServer = await client.guilds.cache.has("994034906306969691");
