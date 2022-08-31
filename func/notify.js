@@ -186,7 +186,8 @@ module.exports = {
 	},
 	async addReactionRole(messageReaction, user){
 		const list = notifyList;
-		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
+		const guild = messageReaction.message.guild;
+		const ops = messageReaction.client.configs.get(guild.id);
 		try {
 			const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
@@ -197,20 +198,20 @@ module.exports = {
 			newName = newName.replace("_Form", "");
 			const roleName = newName + "Raid";
 			const tierArr = list.get(tier);
-			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
+			if (!tierArr) return console.error(`[${guild.name}]: I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
 			if (tierArr.map(i => i.name).includes(emojiName.toUpperCase())) {
 				const server = messageReaction.message.guild;
 				const member = await server.members.fetch(user.id);
 				const role = server.roles.cache.find(r => r.name == roleName);
 				if (role) {
-					console.log(`[${dateToTime(new Date())}] Adding role ${role.name} to ${user.username}${user}`);
+					console.log(`[${guild.name}]: [${dateToTime(new Date())}] Adding role ${role.name} to ${user.username}${user}`);
 					member.roles.add(role.id).catch((e) => {
-						console.error(`[${dateToTime(new Date())}] Could not add ${roleName} to ${user.username}${user}. Error: ${e}`);
+						console.error(`[${guild.name}]: [${dateToTime(new Date())}] Could not add ${roleName} to ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
 					const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
 					pokenavChannel.send(`<@&${ops.modRole}> I could not find a role while adding. Please tell Soul.`);
-					console.error(`[${dateToTime(new Date())}] An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
+					console.error(`[${guild.name}]: [${dateToTime(new Date())}] An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
 				const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
@@ -223,7 +224,8 @@ module.exports = {
 	},
 	async removeReactionRole(messageReaction, user){
 		const list = notifyList;
-		const ops = messageReaction.client.configs.get(messageReaction.message.guild.id);
+		const guild = messageReaction.message.guild;
+		const ops = messageReaction.client.configs.get(guild.id);
 		try {
 			const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
@@ -234,25 +236,25 @@ module.exports = {
 			newName = newName.replace("_Form", "");
 			const roleName = newName + "Raid";
 			const tierArr = list.get(tier);
-			if (!tierArr) return console.error(`I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
+			if (!tierArr) return console.error(`[${guild.name}]: I could not find the "${tier}" tier in the list. Perhaps there are other message reactions in the channel`);
 			if (tierArr.map(i => i.name).includes(emojiName.toUpperCase())) {
 				const server = messageReaction.message.guild;
 				const member = await server.members.fetch(user.id);
 				const role = server.roles.cache.find(r => r.name == roleName);
 				if (role) {
-					console.log(`[${dateToTime(new Date())}] Removing role ${role.name} from ${user.username}${user}`);
+					console.log(`[${guild.name}]: [${dateToTime(new Date())}] Removing role ${role.name} from ${user.username}${user}`);
 					member.roles.remove(role.id).catch((e) => {
-						console.error(`[${dateToTime(new Date())}]: Could not remove ${roleName} from ${user.username}${user}. Error: ${e}`);
+						console.error(`[${guild.name}]: [${dateToTime(new Date())}]: Could not remove ${roleName} from ${user.username}${user}. Error: ${e}`);
 					});
 				}	else {
 					const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
 					pokenavChannel.send(`<@&${ops.modRole}> I could not find a role while removing. Please tell Soul.`);
-					console.error(`[${dateToTime(new Date())}]: An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
+					console.error(`[${guild.name}]: [${dateToTime(new Date())}]: An error occured. I could not find the ${roleName} role. Someone may have deleted it?`);
 				}
 			} else {
 				const pokenavChannel = await messageReaction.message.guild.channels.fetch(ops.pokenavChannel);
 				pokenavChannel.send(`<@&${ops.modRole}> An emoji was not found in the saved list while removing. Please tell Soul.`);
-				console.error(`[${dateToTime(new Date())}]: An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
+				console.error(`[${guild.name}]: [${dateToTime(new Date())}]: An error occured. I could not find the ${emojiName} emoji in the list! An erroneous reaction?`);
 			}
 		} catch (e) {
 			console.error(e);
