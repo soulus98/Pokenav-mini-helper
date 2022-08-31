@@ -69,6 +69,7 @@ client.once("ready", async () => {
 	}
 	const allGuilds = client.guilds.cache;
 	const isUpperCase = (string) => /^[A-Z]*$/.test(string);
+	console.log("\nChanging role names:");
 	for (const [gId, g] of allGuilds) {
 		if (!intendedServers.includes(gId)) continue;
 		const roles = await g.roles.fetch();
@@ -80,7 +81,8 @@ client.once("ready", async () => {
 					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
 				});
 			newName = newName.slice(0, -4) + "R" + newName.slice(-3);
-			console.log(rName, `${(rName.length < 13) ? "\t" : ""}\t=>`, newName);
+			await r.setName(newName);
+			console.log(`[${g.name}]:\t`, rName, `${(rName.length < 13) ? "\t" : ""}\t=>`, newName);
 		}
 	}
 	allNotificationServers(client).catch((err) => console.error(err));

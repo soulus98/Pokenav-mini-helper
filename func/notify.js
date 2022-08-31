@@ -497,6 +497,10 @@ async function makeRoles(input, message) {
 		for (const tier of input) {
 			for (const bossItem of tier[1]) {
 				const name = bossItem.name.replace("_FORM", "");
+				const newName = name.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
+				function(txt) {
+					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+				});
 				const roleName = newName + "Raid";
 				const bossName = name.replace(/_/g, "-");
 				const role = server.roles.cache.find(r => r.name == roleName);
