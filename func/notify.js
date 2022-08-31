@@ -421,6 +421,10 @@ module.exports = {
 		await module.exports.loadPokemonLookup().catch(console.error);
 		return;
 	},
+	async searchAPI(value){
+		const filtered = pokemonLookup.filter((v, k) => k.toLowerCase().includes(value.toLowerCase()));
+		return filtered.map((v, k) => k);
+	},
 };
 
 async function argsCheck(args, list) {
@@ -585,6 +589,10 @@ async function makeEmoji(input, message) {
 				else if (num < 99) num = "0" + num;
 				const urlName = item.name.toLowerCase().replace(/_/g, "-").replace("-form", "");
 				const emoji = allEmoji.find(e => e.name == item.name);
+				const emojiName = item.name.replace("_FORM", "").replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
+				function(txt) {
+					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+				});
 				const url = `https://static.pokenav.app/images/pokemon-icons/png/128/${num}-${urlName}.png`;
 				const backupUrl = `https://static.pokenav.app/images/pokemon-go-icons/png/128/${num}-${urlName}.png`;
 				if (emoji) {
@@ -592,9 +600,9 @@ async function makeEmoji(input, message) {
 					item.identifier = emoji.identifier;
 				} else {
 					console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
-					const res = await emojiServer.emojis.create(url, item.name).then((e) => e.identifier).catch(err => err);
+					const res = await emojiServer.emojis.create(url, emojiName).then((e) => e.identifier).catch(err => err);
 					if (res.message?.includes("image: Invalid image data") || res.code == "EMOJI_TYPE") {
-						const res2 = await emojiServer.emojis.create(backupUrl, item.name).then((e) => e.identifier).catch(err => err);
+						const res2 = await emojiServer.emojis.create(backupUrl, emojiName).then((e) => e.identifier).catch(err => err);
 						if (res2.message?.includes("image: Invalid image data") || res.code == "EMOJI_TYPE") {
 							console.log(`${item.name} thumbnail was not available as an emoji.`);
 							messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
