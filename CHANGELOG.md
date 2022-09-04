@@ -3,12 +3,15 @@
 * Fixed `]n` and `]cn` to work without `$counters`
 * Added `]update-api` to update api when outdated
 
-#### v2.0.1 (2022-Jul-13)
+#### v2.0.1 (2022-Aug-13)
 * Added a **mentionable** toggle for role creation
 
-#### v2.0.2 (2022-Jul-31)
+#### v2.0.2 (2022-Aug-31)
 * Changed role names to Pascal_Snake_CaseRaid
 * Fixed some bugs in the notify system
+
+#### v2.0.3 (2022-Sep-04)
+* Fixed a few more bugs in ]n and ]cn
 
 # v1.3 (2022-Jul-07)
 * Made a raid announce channel category switcher for PokeNav
