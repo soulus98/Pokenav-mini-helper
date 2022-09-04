@@ -11,6 +11,7 @@
 * Fixed some bugs in the notify system
 
 #### v2.0.3 (2022-Sep-04)
+* Removed temporary footer tier info
 * Fixed a few more bugs in ]n and ]cn
 
 # v1.3 (2022-Jul-07)

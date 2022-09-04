@@ -189,7 +189,13 @@ module.exports = {
 		const guild = messageReaction.message.guild;
 		const ops = messageReaction.client.configs.get(guild.id);
 		try {
-			const tier = messageReaction.message.embeds[0]?.footer.text;
+			const title = messageReaction.message.embeds[0]?.title;
+			let tier;
+			if (title.includes("1")) tier = 1;
+			if (title.includes("3")) tier = 3;
+			if (title.includes("4")) tier = 4;
+			if (title.includes("&")) tier = 5;
+			// const tier = messageReaction.message.embeds[0]?.footer?.text;
 			const emojiName = messageReaction.emoji.name;
 			let newName = emojiName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
 				function(txt) {
@@ -227,7 +233,12 @@ module.exports = {
 		const guild = messageReaction.message.guild;
 		const ops = messageReaction.client.configs.get(guild.id);
 		try {
-			const tier = messageReaction.message.embeds[0]?.footer.text;
+			let tier;
+			if (title.includes("1")) tier = 1;
+			if (title.includes("3")) tier = 3;
+			if (title.includes("4")) tier = 4;
+			if (title.includes("&")) tier = 5;
+			// const tier = messageReaction.message.embeds[0]?.footer.text;
 			const emojiName = messageReaction.emoji.name;
 			let newName = emojiName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
 				function(txt) {
@@ -343,8 +354,16 @@ module.exports = {
 			return;
 		}
 		const existingIds = new Discord.Collection;
-		existingMessages.forEach((item, k) => {
-			if (item.embeds[0]) existingIds.set(item.embeds[0].footer.text, k);
+		existingMessages.forEach((m, k) => {
+			if (m.embeds[0]) {
+				const title = m.embeds[0]?.title;
+				let tier;
+				if (title.includes("1")) tier = "1";
+				if (title.includes("3")) tier = "3";
+				if (title.includes("4")) tier = "4";
+				if (title.includes("&")) tier = "5";
+				existingIds.set(tier, k);
+			}
 		});
 		console.log(`[${server.name}]: Checking and adding reactions`);
 		const lastKey = newList.lastKey();
@@ -364,8 +383,8 @@ module.exports = {
 					console.log(`Sending a new T${tier} message and reacting`);
 					const embed = new Discord.MessageEmbed()
 					.setDescription("Click on a raid boss to be notified when a new raid is posted.\nClick it again to remove the notification.")
-					.setColor(0xFF00FF)
-					.setFooter({ text: tier });
+					.setColor(0xFF00FF);
+					// .setFooter({ text: tier });
 					if (tier == 5) embed.setTitle("Legendary & Mega Raid Bosses");
 					else embed.setTitle(`Tier ${tier} Raid Bosses`);
 					message = await notifyChannel.send({ embeds: [embed] });
