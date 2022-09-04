@@ -393,10 +393,8 @@ module.exports = {
 			const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 			if (inputList == "all") return notifyChannel.bulkDelete(existingMessages).catch(console.error);
 			const deleteNames = inputList.map(v => v).flat().map((i) => i.name.toLowerCase());
-			console.log(`[${server.name}]: Trying to delete: `, deleteNames.join(", "));
 			for (const [k1, msg] of existingMessages) {
 				const reactionsToDelete = msg.reactions.cache.filter((r) => deleteNames.includes(r.emoji.name.toLowerCase()));
-				console.log(`[${server.name}]: Can only delete: `, reactionsToDelete);
 				if (reactionsToDelete.size == msg.reactions.cache.size) {
 					msg.delete().catch(console.error);
 				}	else {
