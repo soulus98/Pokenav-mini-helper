@@ -67,7 +67,7 @@ client.once("ready", async () => {
 			continue;
 		}
 	}
-	const allGuilds = client.guilds.cache;
+	/* const allGuilds = client.guilds.cache;
 	const isUpperCase = (string) => /^[A-Z]*$/.test(string);
 	console.log("\nChanging role names:");
 	for (const [gId, g] of allGuilds) {
@@ -84,8 +84,8 @@ client.once("ready", async () => {
 			await r.setName(newName);
 			console.log(`[${g.name}]:\t`, rName, `${(rName.length < 13) ? "\t" : ""}\t=>`, newName);
 		}
-	}
-	allNotificationServers(client).catch((err) => console.error(err));
+	} */
+	allNotificationServers(client, "make").catch((err) => console.error(err));
 	const emojiServer = await client.guilds.cache.has("994034906306969691");
 	const activeServers = client.guilds.cache;
 	const activeServerList = [];

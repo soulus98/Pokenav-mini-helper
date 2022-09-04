@@ -45,7 +45,7 @@ module.exports = {
 				newList.set(key, arr.sort((a, b) => a.name - b.name));
 			}
 		});
-		await module.exports.allNotificationServers(message.client, newList);
+		await module.exports.allNotificationServers(message.client, "make", newList);
 		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async override(message, boss, tier, emoji) {
@@ -73,7 +73,7 @@ module.exports = {
 			newArr.sort((a, b) => a.name - b.name);
 			list.set(tier, newArr);
 		}
-		await module.exports.allNotificationServers(message.client, list);
+		await module.exports.allNotificationServers(message.client, "make", list);
 		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>`);
 	},
 	loadNotifyList() {
@@ -266,7 +266,7 @@ module.exports = {
 		message.react("👀");
 		if (args[0].toLowerCase() == "all") {
 			notifyList = new Discord.Collection();
-			await module.exports.deleteNotificationReactions(message, "all");
+			await module.exports.allNotificationServers(message.client, "delete", "all");
 			await deleteRoles(list, message).catch(console.error);
 			await deleteEmoji(list, message).catch(console.error);
 			message.reply("Notifications removed.");
@@ -307,7 +307,7 @@ module.exports = {
 		// result = tempList;
 		const result = new Discord.Collection();
 		checkTier(removable, result, messageData, message);
-		await module.exports.deleteNotificationReactions(message, result);
+		await module.exports.allNotificationServers(message.client, "delete", result);
 		const newList = new Discord.Collection();
 		list.forEach((arr, tier) => {
 			if (result.has(tier)) {
@@ -338,7 +338,7 @@ module.exports = {
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
 			notifyChannel.bulkDelete(existingMessages).catch(console.error);
-			console.log("Saving blank list");
+			console.log(`[${server.name}]: Saving blank list`);
 			module.exports.saveNotifyList();
 			return;
 		}
@@ -346,7 +346,7 @@ module.exports = {
 		existingMessages.forEach((item, k) => {
 			if (item.embeds[0]) existingIds.set(item.embeds[0].footer.text, k);
 		});
-		console.log("Checking and adding reactions");
+		console.log(`[${server.name}]: Checking and adding reactions`);
 		const lastKey = newList.lastKey();
 		for (const [tier, arr] of newList){
 			let message;
@@ -372,9 +372,7 @@ module.exports = {
 				}
 				for (const item of arr) {
 					await message.react(item.identifier).catch((err) => {
-						console.log("testo\n\n");
-						console.log(err, "\n");
-						console.log(err.code, "\n\n");
+						console.error(err.code, "\n\n");
 						if (err.code == "EMOJI_TYPE" || err.code == 10014) {
 							console.error(`Could not react with the ${item.identifier} emoji. Removing from saved list.`);
 							const newArr = [...arr];
@@ -388,15 +386,17 @@ module.exports = {
 			}
 		}
 	},
-	async deleteNotificationReactions(message, inputList){
-		const ops = message.client.configs.get(message.guild.id);
+	async deleteNotificationReactions(server, inputList){
+		const ops = server.client.configs.get(server.id);
 		try {
-			const notifyChannel = await message.guild.channels.fetch(ops.notifyReactionChannel);
+			const notifyChannel = await server.channels.fetch(ops.notifyReactionChannel);
 			const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 			if (inputList == "all") return notifyChannel.bulkDelete(existingMessages).catch(console.error);
-			const deleteNames = inputList.map(v => v).flat().map((i) => i.name);
+			const deleteNames = inputList.map(v => v).flat().map((i) => i.name.toLowerCase());
+			console.log(`[${server.name}]: Trying to delete: `, deleteNames.join(", "));
 			for (const [k1, msg] of existingMessages) {
-				const reactionsToDelete = msg.reactions.cache.filter((r) => deleteNames.includes(r.emoji.name));
+				const reactionsToDelete = msg.reactions.cache.filter((r) => deleteNames.includes(r.emoji.name.toLowerCase()));
+				console.log(`[${server.name}]: Can only delete: `, reactionsToDelete);
 				if (reactionsToDelete.size == msg.reactions.cache.size) {
 					msg.delete().catch(console.error);
 				}	else {
@@ -410,12 +410,14 @@ module.exports = {
 			console.error(e);
 		}
 	},
-	async allNotificationServers(client, list) {
+	async allNotificationServers(client, funct, list) {
 		for (const [k, config] of client.configs) {
+			if (!config.notifyReactionChannel) continue;
 			const server = await client.guilds.fetch(k);
-			if (config.notifyReactionChannel) await module.exports.makeNotificationReactions(server, list);
+			if (funct == "make") await module.exports.makeNotificationReactions(server, list);
+			if (funct == "delete") await module.exports.deleteNotificationReactions(server, list);
 			else continue;
-			console.log(`Notifications loaded in ${server.name}`);
+			console.log(`Notifications (re)loaded in ${server.name}`);
 		}
 		return;
 	},
@@ -585,14 +587,14 @@ async function makeEmoji(input, message) {
 				let num = pokemonLookup.get(item.name).num;
 				if (num > 8000) {
 					console.log(`${item.name} mega not found (>8000).`);
-					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`]api\` or use \`]override\`.`); //todo update api command
+					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`]api update\` or use \`]override\`.`);
 					if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
 					else continue;
 				}
 				if (num < 9) num = "00" + num;
 				else if (num < 99) num = "0" + num;
 				const urlName = item.name.toLowerCase().replace(/_/g, "-").replace("-form", "");
-				const emoji = allEmoji.find(e => e.name == item.name);
+				const emoji = allEmoji.find(e => e.name.toLowerCase() == item.name.toLowerCase());
 				const emojiName = item.name.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
 				function(txt) {
 					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
@@ -642,7 +644,7 @@ async function deleteEmoji(input, message) {
 		for (const item of v) {
 			const allEmoji = await emojiServer.emojis.fetch();
 			const emojiName = item.name;
-			const emoji = allEmoji.find((e) => e.name == emojiName);
+			const emoji = allEmoji.find((e) => e.name.toLowerCase() == emojiName.toLowerCase());
 			await emojiServer.emojis.delete(emoji).then(() => console.log(`Deleted Emoji ${emojiName}`)).catch((e) => {
 				if (e.code == "INVALID_TYPE") console.error(`Error: could not delete emoji ${emojiName} as it didn't exist...?`);
 				else console.error(e);
