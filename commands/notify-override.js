@@ -17,14 +17,14 @@ module.exports = {
     }
     const tierInput = args[1].toLowerCase();
     let tier;
-    if (["1", "t1", "tier1", "t 1", "tier 1", "tier 1 boss", "tier1boss", "tier 1 raid boss"].includes(tierInput)) tier = "Tier 1 Raid Boss";
-    else if (["2", "t2", "tier2", "t 2", "tier 2", "tier 2 boss", "tier2boss", "tier 2 raid boss"].includes(tierInput)) tier = "Tier 2 Raid Boss";
-    else if (["3", "t3", "tier3", "t 3", "tier 3", "tier 3 boss", "tier3boss", "tier 3 raid boss"].includes(tierInput)) tier = "Tier 3 Raid Boss";
-    else if (["4", "t4", "tier4", "t 4", "tier 4", "tier 4 boss", "tier4boss", "tier 4 raid boss"].includes(tierInput)) tier = "Tier 4 Raid Boss";
-    else if (["5", "t5", "tier5", "t 5", "tier 5", "tier 5 boss", "tier5boss", "tier 5 raid boss"].includes(tierInput)) tier = "Tier 5 Raid Boss";
-    else if (["mega 5", "mega5", "5 mega", "5mega", "tmega5", "m5", "5m", "mega legendary", "legendary mega"].includes(tierInput)) tier = "Tier Mega 5 Raid Boss";
-    else if (["mega", "tmega", "tiermega", "m", "tm", "tierm", "t mega", "tier mega", "t m", "tier m"].includes(tierInput)) tier = "Tier Mega Raid Boss";
-    else if (["ultra beast", "ultra", "ub", "tub", "tultra", "t ub", "t ultra", "t ultra beast", "tierub", "tierultra", "tier ub", "tier ultra", "tier ultra beast"].includes(tierInput)) tier = "Tier Ultra Beast Raid Boss";
+    if (["1", "t1", "tier1", "t 1", "tier 1", "tier 1 boss", "tier1boss", "tier 1 raid boss"].includes(tierInput)) tier = "1";
+    else if (["2", "t2", "tier2", "t 2", "tier 2", "tier 2 boss", "tier2boss", "tier 2 raid boss"].includes(tierInput)) tier = "2";
+    else if (["3", "t3", "tier3", "t 3", "tier 3", "tier 3 boss", "tier3boss", "tier 3 raid boss"].includes(tierInput)) tier = "3";
+    else if (["4", "t4", "tier4", "t 4", "tier 4", "tier 4 boss", "tier4boss", "tier 4 raid boss"].includes(tierInput)) tier = "4";
+    else if (["5", "t5", "tier5", "t 5", "tier 5", "tier 5 boss", "tier5boss", "tier 5 raid boss"].includes(tierInput)) tier = "5";
+    else if (["mega 5", "mega5", "5 mega", "5mega", "tmega5", "m5", "5m", "mega legendary", "legendary mega"].includes(tierInput)) tier = "5"; //mega 5
+    else if (["mega", "tmega", "tiermega", "m", "tm", "tierm", "t mega", "tier mega", "t m", "tier m"].includes(tierInput)) tier = "5"; // mega
+    else if (["ultra beast", "ultra", "ub", "tub", "tultra", "t ub", "t ultra", "t ultra beast", "tierub", "tierultra", "tier ub", "tier ultra", "tier ultra beast"].includes(tierInput)) tier = "5"; // ultra beast
     else {
       message.reply(`I could not discern the tier from ${tierInput}.\nPlease provide one of the following tiers: \`1\`, \`2\`, \`3\`, \`4\`, \`5\`, \`mega\`, \`mega 5\`, \`ultra beast\``);
       return `, but I could not discern a tier from ${tierInput}`;
