@@ -67,10 +67,6 @@ client.once("ready", async () => {
 			continue;
 		}
 	}
-	const pogoServer = client.guilds.cache.get("424101187067969546");
-	const alakaRole = pogoServer.roles.cache.find(r => r.name.includes("Alakazam"));
-	console.log(alakaRole);
-	alakaRole.setName("Alakazam_MegaRaid");
 	allNotificationServers(client, "make").catch((err) => console.error(err));
 	const emojiServer = await client.guilds.cache.has("994034906306969691");
 	const activeServers = client.guilds.cache;
