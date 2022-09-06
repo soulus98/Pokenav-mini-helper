@@ -67,24 +67,10 @@ client.once("ready", async () => {
 			continue;
 		}
 	}
-	/* const allGuilds = client.guilds.cache;
-	const isUpperCase = (string) => /^[A-Z]*$/.test(string);
-	console.log("\nChanging role names:");
-	for (const [gId, g] of allGuilds) {
-		if (!intendedServers.includes(gId)) continue;
-		const roles = await g.roles.fetch();
-		for (const [rId, r] of roles) {
-			const rName = r.name;
-			if (!rName.endsWith("Raid")) continue;
-			if (!isUpperCase(rName[1])) continue;
-			let newName = rName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi, (txt) => {
-					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-				});
-			newName = newName.slice(0, -4) + "R" + newName.slice(-3);
-			await r.setName(newName);
-			console.log(`[${g.name}]:\t`, rName, `${(rName.length < 13) ? "\t" : ""}\t=>`, newName);
-		}
-	} */
+	const pogoServer = client.guilds.cache.get("424101187067969546");
+	const alakaRole = pogoServer.roles.cache.find(r => r.name.includes("Alakazam"));
+	console.log(alakaRole);
+	alakaRole.setName("Alakazam_MegaRaid");
 	allNotificationServers(client, "make").catch((err) => console.error(err));
 	const emojiServer = await client.guilds.cache.has("994034906306969691");
 	const activeServers = client.guilds.cache;
