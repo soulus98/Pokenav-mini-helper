@@ -191,11 +191,10 @@ module.exports = {
 		try {
 			const title = messageReaction.message.embeds[0]?.title;
 			let tier;
-			if (title.includes("1")) tier = 1;
-			if (title.includes("3")) tier = 3;
-			if (title.includes("4")) tier = 4;
-			if (title.includes("&")) tier = 5;
-			// const tier = messageReaction.message.embeds[0]?.footer?.text;
+			if (title.includes("1")) tier = "1";
+			if (title.includes("3")) tier = "3";
+			if (title.includes("4")) tier = "4";
+			if (title.includes("&")) tier = "5";
 			const emojiName = messageReaction.emoji.name;
 			let newName = emojiName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
 				function(txt) {
@@ -233,12 +232,12 @@ module.exports = {
 		const guild = messageReaction.message.guild;
 		const ops = messageReaction.client.configs.get(guild.id);
 		try {
+			const title = messageReaction.message.embeds[0]?.title;
 			let tier;
-			if (title.includes("1")) tier = 1;
-			if (title.includes("3")) tier = 3;
-			if (title.includes("4")) tier = 4;
-			if (title.includes("&")) tier = 5;
-			// const tier = messageReaction.message.embeds[0]?.footer.text;
+			if (title.includes("1")) tier = "1";
+			if (title.includes("3")) tier = "3";
+			if (title.includes("4")) tier = "4";
+			if (title.includes("&")) tier = "5";
 			const emojiName = messageReaction.emoji.name;
 			let newName = emojiName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
 				function(txt) {
@@ -349,61 +348,48 @@ module.exports = {
 		const existingMessages = await notifyChannel.messages.fetch({ limit: 10 }).then((ms) => ms.filter((msg) => !msg.pinned));
 		if (newList.size == 0) {
 			notifyChannel.bulkDelete(existingMessages).catch(console.error);
-			console.log(`[${server.name}]: Saving blank list`);
+			console.log(`\n[${server.name}]: Saving blank list`);
 			module.exports.saveNotifyList();
 			return;
 		}
-		const existingIds = new Discord.Collection;
-		existingMessages.forEach((m, k) => {
-			if (m.embeds[0]) {
-				const title = m.embeds[0]?.title;
-				let tier;
-				if (title.includes("1")) tier = "1";
-				if (title.includes("3")) tier = "3";
-				if (title.includes("4")) tier = "4";
-				if (title.includes("&")) tier = "5";
-				existingIds.set(tier, k);
+		console.log(`\n[${server.name}]: Checking and adding reactions`);
+		let tiersArr = newList.map((v, k) => k);
+		for (const [mId, message] of existingMessages) {
+			if (!message.embeds[0] || !message.embeds[0].title) continue;
+			const title = message.embeds[0].title;
+			let tier;
+			if (title.includes("1")) tier = "1";
+			if (title.includes("3")) tier = "3";
+			if (title.includes("4")) tier = "4";
+			if (title.includes("&")) tier = "5";
+			if (!tier) {
+				console.error(`[${message.guild.name}]: I could not find a tier in the list for the "${title}" embed message. Perhaps there are other message reactions in the channel`);
+				continue;
 			}
-		});
-		console.log(`[${server.name}]: Checking and adding reactions`);
-		const lastKey = newList.lastKey();
-		for (const [tier, arr] of newList){
-			let message;
-			if (arr.length == 0) {
-				console.log(`Deleting ${tier} message`);
-				message = await notifyChannel.messages.fetch(existingIds.get(tier));
+			const bossArr = newList.get(tier);
+			if (!bossArr) {
+				console.log(`Deleting T${tier} message\n`);
 				await message.delete();
 				newList.delete(tier);
-				if (lastKey == tier) saveList(newList);
+				if (existingMessages.lastKey() == tier) saveList(newList);
 			} else {
-				if (existingIds.has(tier)) {
-					console.log(`Reacting to T${tier} message`);
-					message = await notifyChannel.messages.fetch(existingIds.get(tier));
-				} else {
-					console.log(`Sending a new T${tier} message and reacting`);
-					const embed = new Discord.MessageEmbed()
-					.setDescription("Click on a raid boss to be notified when a new raid is posted.\nClick it again to remove the notification.")
-					.setColor(0xFF00FF);
-					// .setFooter({ text: tier });
-					if (tier == 5) embed.setTitle("Legendary & Mega Raid Bosses");
-					else embed.setTitle(`Tier ${tier} Raid Bosses`);
-					message = await notifyChannel.send({ embeds: [embed] });
-				}
-				for (const item of arr) {
-					await message.react(item.identifier).catch((err) => {
-						console.error(err.code, "\n\n");
-						if (err.code == "EMOJI_TYPE" || err.code == 10014) {
-							console.error(`Could not react with the ${item.identifier} emoji. Removing from saved list.`);
-							const newArr = [...arr];
-							newArr.splice(newArr.indexOf(item), 1);
-							if (newArr.length == 0) newList.delete(tier);
-							else newList.set(tier, newArr);
-						} else console.error(err);
-					});
-					if (lastKey == tier && arr.indexOf(item) == arr.length - 1) return saveList(newList);
-				}
+				console.log(`Reacting to T${tier} message`);
+				await makeReactions(message, tier, newList);
+				tiersArr = tiersArr.filter((i) => i !== tier);
 			}
 		}
+		if (!tiersArr.length) return saveList(newList);
+		for (const tier of tiersArr) {
+			console.log(`Sending a new T${tier} message and reacting`);
+			const embed = new Discord.MessageEmbed()
+			.setDescription("Click on a raid boss to be notified when a new raid is posted.\nClick it again to remove the notification.")
+			.setColor(0xFF00FF);
+			if (tier == 5) embed.setTitle("Legendary & Mega Raid Bosses");
+			else embed.setTitle(`Tier ${tier} Raid Bosses`);
+			const message = await notifyChannel.send({ embeds: [embed] });
+			await makeReactions(message, tier, newList);
+		}
+		saveList(newList);
 	},
 	async deleteNotificationReactions(server, inputList){
 		const ops = server.client.configs.get(server.id);
@@ -669,6 +655,34 @@ async function deleteEmoji(input, message) {
 			if (v.indexOf(item) == item.length - 1 && input.lastKey() == k) return;
 		}
 	}
+}
+
+async function makeReactions(message, tier, newList) {
+	const reactionCache = message.reactions.cache;
+	const reactionEmojiIds = reactionCache.map(r => r.emoji.identifier);
+	const bossArr = newList.get(tier);
+	const arrEmojiIds = bossArr.map(i => i.identifier);
+	const deleteArr = reactionEmojiIds.filter(i => !arrEmojiIds.includes(i));
+	const foundArr = reactionEmojiIds.filter(i => arrEmojiIds.includes(i));
+	const createArr = arrEmojiIds.filter(i => !reactionEmojiIds.includes(i));
+	for (const id of deleteArr) {
+		const re = reactionCache.find(r => r.emoji.identifier == id);
+		await re.remove();
+	}
+	for (const id of createArr) {
+		await message.react(id).catch((err) => {
+			console.error(err.code, "\n\n");
+			if (err.code == "EMOJI_TYPE" || err.code == 10014) {
+				console.error(`Could not react with the ${id} emoji. Removing from saved list.`);
+				const bossName = newList.find(i => i.identifier == id).name;
+				const newArr = [...bossArr];
+				newArr.splice(newArr.indexOf(bossName), 1);
+				if (newArr.length == 0) newList.delete(tier);
+				else newList.set(tier, newArr);
+			} else console.error(err);
+		});
+	}
+	console.log(`${(foundArr.length) ? `Found existing reactions: ${foundArr.join(", ")}\n` : ""}${(createArr.length) ? `Created new reactions: ${createArr.join(", ")}\n` : ""}${(deleteArr.length) ? `Deleted unintended reactions: ${deleteArr.join(", ")}\n` : ""}`);
 }
 
 function saveList(newList){

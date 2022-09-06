@@ -10,7 +10,8 @@
 * Changed role names to Pascal_Snake_CaseRaid
 * Fixed some bugs in the notify system
 
-#### v2.0.3 (2022-Sep-04)
+#### v2.0.3 (2022-Sep-0?)
+* Saved some API calls by checking the reactions before reacting
 * Removed temporary footer tier info
 * Fixed a few more bugs in ]n and ]cn
 

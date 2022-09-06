@@ -100,7 +100,7 @@ client.once("ready", async () => {
 	soul.send(`**Dev message:** Loaded in:\n• ${activeServerList.join("\n• ")}`).catch(console.error);
 	console.log(`\nActive in:\n• ${activeServerList.join("\n• ")}`);
 	console.log(`\nServer started at: ${launchDate.toLocaleString()}.`);
-	console.log("\n======================================================================================\n");
+	console.log("\n======================================================================================");
 })
 .on("messageCreate", async (message) => {
 	if (!intendedServers.includes(message.guild.id)) return;
