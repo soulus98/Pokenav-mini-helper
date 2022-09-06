@@ -37,7 +37,6 @@ module.exports = {
         message.reply("Error: This boss was found in the saved list.\nNothing has been processed.");
         return ", but it failed, as the specified boss was already in the notifyList.";
       } else {
-				message.reply(err);
 				return `, but it failed, because of an unexpected error:${err}`;
       }
     }
