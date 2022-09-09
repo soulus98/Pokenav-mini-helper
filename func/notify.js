@@ -48,11 +48,11 @@ module.exports = {
 		await module.exports.allNotificationServers(message.client, "make", newList);
 		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
-	async override(message, boss, tier, emoji) {
-		if (!emoji) {
-			message.reply("I need an emoji or Soul needs to fix the emoji grabber thingy\nUsage is `]override <boss> <tier> [emoji]`");
-			return;
-		}
+	async override(message, tier, args, type) {
+		message.reply("command broken. check back later");
+		return ;
+		let bosses;
+		if (type == "emoji") bosses = args.map(i => i.slice(2, -1))
 		const list = notifyList;
 		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${boss}`);
 		for (const item of list) {
