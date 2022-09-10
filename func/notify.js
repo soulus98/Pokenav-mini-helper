@@ -18,7 +18,7 @@ module.exports = {
 		if (removed.length) messageData.push(`The following bosses were found in the saved list: \`${removed.join("`, `")}\``);
 		message.react("👀");
 		const result = new Discord.Collection();
-		checkTier(checkedArgs, result, messageData, message);
+		checkTierAPI(checkedArgs, result, messageData, message);
 		if (messageData.length == args.length) throw ["none", messageData];
 		// const [result, md] = await pokeNavCheck(checkedArgs, message);
 		// md.forEach((item) => messageData.push(item));
@@ -49,27 +49,40 @@ module.exports = {
 		message.reply(`Notifications added.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async override(message, tier, args, type) {
-		message.reply("command broken. check back later");
-		return ;
-		let bosses;
-		if (type == "emoji") bosses = args.map(i => i.slice(2, -1))
-		const list = notifyList;
-		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${boss}`);
-		for (const item of list) {
-			if (item[1].includes(boss)) throw ["already"];
+		let bosses, emojis;
+		if (type == "emoji") {
+			emojis = args.map(i => i.slice(2, -1));
+			bosses = emojis.map(i => i.split(":")[0]);
 		}
+		const list = notifyList;
+		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${bosses.join(", ")}`);
+		const [checkedArgs, removed] = await argsCheck(bosses, list);
+		if (hasDuplicates(checkedArgs)) throw ["dupe"];
+		if (!checkedArgs.length) throw ["already"];
+		const messageData = [];
+		if (removed.length) messageData.push(`The following bosses were found in the saved list: \`${removed.join("`, `")}\``);
 		message.react("👀");
-		// const res = await pokeNavOverrideCheck(boss, message);
-		const tempItem = { name : boss };
-		if (emoji.startsWith("<")) emoji = emoji.slice(2, -1);
-		if (emoji) tempItem.identifier = emoji;
-		const tempList = new Discord.Collection().set(tier, [tempItem]);
-		await makeRoles(tempList, message);
-		if (!emoji) await makeEmoji(tempList, message);
-		if (!list.get(tier)) list.set(tier, [tempItem]);
+		const arr = [];
+		for (const boss of bosses) {
+			if (type == "emoji") {
+				const emoji = emojis[bosses.indexOf(boss)];
+				arr.push({ name: boss.toUpperCase(), identifier: emoji });
+			} else {
+				arr.push({ name: boss.toUpperCase() });
+			}
+		}
+		const result = new Discord.Collection();
+		result.set(tier, arr);
+		await makeRoles(result, message);
+		if (type == "boss") {
+			await makeEmoji(result, message);
+		}
+		if (!list.get(tier)) list.set(tier, arr);
 		else {
 			const newArr = list.get(tier);
-			newArr.push(tempItem);
+			for (const b of arr) {
+				newArr.push(b);
+			}
 			newArr.sort((a, b) => a.name - b.name);
 			list.set(tier, newArr);
 		}
@@ -316,7 +329,8 @@ module.exports = {
 		// }
 		// result = tempList;
 		const result = new Discord.Collection();
-		checkTier(removable, result, messageData, message);
+		//checkTierAPI(removable, result, messageData, message);
+		checkTierLocal(removable, result, list);
 		await module.exports.allNotificationServers(message.client, "delete", result);
 		const newList = new Discord.Collection();
 		list.forEach((arr, tier) => {
@@ -339,7 +353,7 @@ module.exports = {
 		module.exports.saveNotifyList().then(() => {
 			return;
 		});
-		message.reply(`Notifications removed.${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
+		message.reply(`Notifications removed.\n<#${message.client.configs.get(message.guild.id).notifyReactionChannel}>${(messageData?.length) ? `\n\nErrors:\n• ${messageData.join("\n• ")}` : ""}`);
 	},
 	async makeNotificationReactions(server, newList){
 		const ops = server.client.configs.get(server.id);
@@ -474,7 +488,7 @@ async function argsCheck(args, list) {
 	}
 }
 
-async function checkTier(input, result, messageData, message) {
+async function checkTierAPI(input, result, messageData, message) {
 	const ops = message.client.configs.get(message.guild.id);
 	for (const bossName of input) {
 		if (!pokemonLookup.has(bossName)) {
@@ -498,6 +512,16 @@ async function checkTier(input, result, messageData, message) {
 		else {
 			result.get(guessTier).push({ name:bossName });
 		}
+	}
+}
+
+async function checkTierLocal(input, result, list) {
+	for (const bossName of input) {
+		const tier = list.findKey(arr => arr.find(i => i.name == bossName));
+		let array = result.get(tier);
+		if (!array) array = [];
+		array.push({ name: bossName });
+		result.set(tier, array);
 	}
 }
 

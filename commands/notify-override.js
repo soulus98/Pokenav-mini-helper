@@ -2,18 +2,18 @@ const { override } = require("../func/notify.js");
 
 module.exports = {
 	name: "notify-override",
-	description: "PokeNav Notification roles setup",
-  aliases: ["override", "n-override", "or"],
-  usage: "`[prefix]override <tier> <boss/emoji>`", // testo
+	description: "PokeNav Notification roles setup. All arguments after `tier` must be of the same type. Either `boss` or `emoji`",
+  aliases: ["override", "n-override", "or", "over"],
+  usage: "`[prefix]override <tier> <boss1/emoji1> [boss2/emoji2] [...]`", // testo
 	guildOnly:true,
 	args:true,
 	async execute(message, args) {
 		const ops = message.client.configs.get(message.guild.id);
 		if (message.channelId != ops.pokenavChannel) return ", but it wasn't sent in pokenavChannel";
 		if (!ops.notifyReactionChannel) return ", but notifyReactionChannel is blank";
-    if (args.length != 2) {
-      message.reply(`You must supply 2 arguments in the form \`${ops.prefix}override <tier> <boss/emoji>\``);
-      return ", but notifyReactionChannel is blank";
+    if (args.length < 2) {
+      message.reply(`You must supply at least 2 arguments in the form \`${module.exports.usage.replace("[prefix]", ops.prefix)}\``);
+      return ", but args was less than 2 long";
     }
     const tierInput = args.shift().toLowerCase();
     let tier;
@@ -34,11 +34,21 @@ module.exports = {
     try {
       const res = await override(message, tier, args, type);
       return res;
-    } catch (err) {
+    } catch (e) {
+			if (!e[0]) {
+				message.reply("Unknown error. Tell soul.");
+				console.error("Unknown error. Tell soul:");
+				console.error(e);
+				return;
+			}
+			const [err, messageData] = e;
       if (err == "already") {
         message.reply("Error: This boss was found in the saved list.\nNothing has been processed.");
         return ", but it failed, as the specified boss was already in the notifyList.";
-      } else {
+      } else if (err == "dupe") {
+				message.reply(`Error: Duplicate bosses were found${(messageData) ? ` in ${messageData}` : ""}.\nYou cannot specify duplicate bosses.`);
+				return ", but it failed, as duplicate entries were entered.";
+			} else {
 				message.reply(err);
 				return `, but it failed, because of an unexpected error:${err}`;
       }

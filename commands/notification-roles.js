@@ -17,6 +17,7 @@ module.exports = {
 				if (!e[0]) {
 					message.reply(e);
 					console.error(e);
+					return;
 				}
 				const [err, messageData] = e;
 				if (err == "none") {
