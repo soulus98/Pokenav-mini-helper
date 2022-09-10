@@ -53,6 +53,8 @@ module.exports = {
 		if (type == "emoji") {
 			emojis = args.map(i => i.slice(2, -1));
 			bosses = emojis.map(i => i.split(":")[0]);
+		} else {
+			bosses = args;
 		}
 		const list = notifyList;
 		console.log(`[${dateToTime(new Date())}]Beginning manual override for: ${bosses.join(", ")}`);
