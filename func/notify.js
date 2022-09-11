@@ -66,12 +66,14 @@ module.exports = {
 		message.react("👀");
 		const arr = [];
 		for (const boss of bosses) {
+			let bossName = boss.toUpperCase().replace(/-/g, "_");
+			if (bossName.includes("_") && !bossName.endsWith("_FORM")) bossName = bossName + "_FORM";
+			const item = { name: bossName };
 			if (type == "emoji") {
 				const emoji = emojis[bosses.indexOf(boss)];
-				arr.push({ name: boss.toUpperCase(), identifier: emoji });
-			} else {
-				arr.push({ name: boss.toUpperCase() });
+				item.identifier = emoji;
 			}
+			arr.push(item);
 		}
 		const result = new Discord.Collection();
 		result.set(tier, arr);
@@ -334,7 +336,6 @@ module.exports = {
 		// }
 		// result = tempList;
 		const result = new Discord.Collection();
-		//checkTierAPI(removable, result, messageData, message);
 		checkTierLocal(removable, result, list);
 		await module.exports.allNotificationServers(message.client, "delete", result);
 		const newList = new Discord.Collection();
@@ -480,6 +481,8 @@ async function argsCheck(args, list) {
 		}
 		checkedArgs.push(name);
 	}
+	console.log(checkedArgs);
+	console.log(list);
 	if (list.size == 0) return [checkedArgs, []];
 	const found = [];
 	for (const [tier, arr] of list) {
@@ -500,24 +503,36 @@ async function checkTierAPI(input, result, messageData, message) {
 			messageData.push(`Boss :${bossName} was not found in the API. Please update the API or use \`${ops.prefix}override\``);
 			continue;
 		}
-		const rawTier = pokemonLookup.get(bossName).tiers[0];
-		let guessTier = 0;
-		if (rawTier.includes("5")) guessTier = "5";
-		else if (rawTier.includes("4")) guessTier = "4";
-		else if (rawTier.includes("3")) guessTier = "3";
-		else if (rawTier.includes("2")) guessTier = "2";
-		else if (rawTier.includes("1")) guessTier = "1";
-		else if (rawTier.includes("MEGA")) guessTier = "5";
-		else if (rawTier.includes("ULTRA")) guessTier = "5";
-		else if (rawTier.includes("UNSET")) {
-			messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
-			continue;
+		let rawTier = pokemonLookup.get(bossName).tiers[0];
+		let guessTier = discernGuessTier(rawTier);
+		if (!guessTier || guessTier == "UNSET") {
+			if (bossName.includes("_")) {
+				rawTier = pokemonLookup.get(bossName.split("_")[0]).tiers[0];
+				guessTier = discernGuessTier(rawTier);
+				if (!guessTier || guessTier == "UNSET") {
+					messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
+					continue;
+				}
+			}
 		}
 		if (!result.has(guessTier)) result.set(guessTier, [{ name:bossName }]);
 		else {
 			result.get(guessTier).push({ name:bossName });
 		}
 	}
+}
+
+async function discernGuessTier(rawTier) {
+	let guessTier;
+	if (rawTier.includes("5")) guessTier = "5";
+	else if (rawTier.includes("4")) guessTier = "4";
+	else if (rawTier.includes("3")) guessTier = "3";
+	else if (rawTier.includes("2")) guessTier = "2";
+	else if (rawTier.includes("1")) guessTier = "1";
+	else if (rawTier.includes("MEGA")) guessTier = "5";
+	else if (rawTier.includes("ULTRA")) guessTier = "5";
+	else if (rawTier.includes("UNSET")) guessTier = "UNSET";
+	return guessTier;
 }
 
 async function checkTierLocal(input, result, list) {
@@ -616,10 +631,22 @@ async function makeEmoji(input, message) {
 		const allEmoji = await emojiServer.emojis.fetch(undefined, { force: true });
 		for (const [k, v] of input) {
 			for (const item of v) {
-				let num = pokemonLookup.get(item.name).num;
+				let lookupName = item.name;
+				let num = pokemonLookup.get(lookupName)?.num;
+				if (!num || isNaN(num) || num < 1) {
+					if (lookupName.includes("_")) lookupName = lookupName.split("_")[0];
+					num = pokemonLookup.get(lookupName)?.num;
+					if (!num || isNaN(num) || num < 1) {
+						console.error(`${item.name} num not good num (<1 !num or NaN).`);
+						console.error("num = ", num);
+						messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`${ops.prefix}api update\` or use \`${ops.prefix}override\`.`);
+						if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
+						else continue;
+					}
+				}
 				if (num > 8000) {
-					console.log(`${item.name} mega not found (>8000).`);
-					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`]api update\` or use \`]override\`.`);
+					console.error(`${item.name} mega not found (>=8000).`);
+					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`${ops.prefix}api update\` or use \`${ops.prefix}override\`.`);
 					if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
 					else continue;
 				}
@@ -775,7 +802,7 @@ function loadAndFormatAPI() {
 					for (const tier of raidObj.tiers) {
 						if (tier.raids.length == 0) continue;
 						for (const raid of tier.raids) {
-							let item = pokemonLookup.get(raid.pokemon);
+							let item = list.get(raid.pokemon);
 							if (item == undefined) item = { tiers: [], num: 0 };
 							if (item.tiers == undefined) item.tiers = [];
 							item.tiers.push(tier.tier);

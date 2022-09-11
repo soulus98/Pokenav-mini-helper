@@ -11,6 +11,8 @@
 * Fixed some bugs in the notify system
 
 #### v2.0.3 (2022-Sep-0?)
+* Fixed override & reworked it to allow multiple bosses/emoji
+* Fixed api update
 * Saved some API calls by checking the reactions before reacting
 * Removed temporary footer tier info
 * Fixed a few more bugs in ]n and ]cn
