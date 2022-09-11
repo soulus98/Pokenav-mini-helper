@@ -187,7 +187,10 @@ module.exports = {
 								reject(`Error thrown when writing the pokemon lookup file. Error: ${err}`);
 								return;
 							}
-							list = require("../server/pokemonLookup.json");
+							const jsonList = require("../server/pokemonLookup.json");
+							for (const g in jsonList) {
+								list.set(g, jsonList[g]);
+							}
 							pokemonLookup = list;
 							resolve(list);
 						});
@@ -721,6 +724,7 @@ function saveList(newList){
 }
 
 function loadAndFormatAPI() {
+	const list = new Discord.Collection();
   return new Promise((resolve) => {
   const https = require("https");
 	console.log("Loading pokebattler/pokemon API...");
@@ -744,7 +748,7 @@ function loadAndFormatAPI() {
 			for (const item of apiObj.pokemon) {
 				try {
 					if (item.pokemonId.includes("SHADOW_FORM")) continue;
-					pokemonLookup.set(item.pokemonId, { num: item.pokedex.pokemonNum });
+					list.set(item.pokemonId, { num: item.pokedex.pokemonNum });
 				} catch (e) {
 					console.log("failed to do: ", item);
 				}
@@ -767,7 +771,6 @@ function loadAndFormatAPI() {
 				});
 
 				raidRes.on("end", () => {
-					console.log("loaded raids");
 					const raidObj = JSON.parse(rBody);
 					for (const tier of raidObj.tiers) {
 						if (tier.raids.length == 0) continue;
@@ -776,10 +779,10 @@ function loadAndFormatAPI() {
 							if (item == undefined) item = { tiers: [], num: 0 };
 							if (item.tiers == undefined) item.tiers = [];
 							item.tiers.push(tier.tier);
-							pokemonLookup.set(raid.pokemon, item);
+							list.set(raid.pokemon, item);
 						}
 					}
-					resolve(pokemonLookup);
+					resolve(list);
 				});
 			});
 			raidReq.on("error", error => {
