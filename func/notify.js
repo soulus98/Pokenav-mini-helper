@@ -481,8 +481,6 @@ async function argsCheck(args, list) {
 		}
 		checkedArgs.push(name);
 	}
-	console.log(checkedArgs);
-	console.log(list);
 	if (list.size == 0) return [checkedArgs, []];
 	const found = [];
 	for (const [tier, arr] of list) {
@@ -504,11 +502,11 @@ async function checkTierAPI(input, result, messageData, message) {
 			continue;
 		}
 		let rawTier = pokemonLookup.get(bossName).tiers[0];
-		let guessTier = discernGuessTier(rawTier);
+		let guessTier = await discernGuessTier(rawTier);
 		if (!guessTier || guessTier == "UNSET") {
 			if (bossName.includes("_")) {
 				rawTier = pokemonLookup.get(bossName.split("_")[0]).tiers[0];
-				guessTier = discernGuessTier(rawTier);
+				guessTier = await discernGuessTier(rawTier);
 				if (!guessTier || guessTier == "UNSET") {
 					messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
 					continue;
