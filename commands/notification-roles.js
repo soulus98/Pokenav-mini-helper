@@ -15,7 +15,8 @@ module.exports = {
 			if (!ops.notifyReactionChannel) return resolve(", but notifyReactionChannel is blank");
 			notify(message, args).then().catch((e) => {
 				if (!e[0]) {
-					message.reply(e);
+					message.reply("Unknown Error. Tell Soul");
+					console.error("Unknown Error. Tell Soul:");
 					console.error(e);
 					return;
 				}

@@ -18,7 +18,7 @@ module.exports = {
 		if (removed.length) messageData.push(`The following bosses were found in the saved list: \`${removed.join("`, `")}\``);
 		message.react("👀");
 		const result = new Discord.Collection();
-		checkTierAPI(checkedArgs, result, messageData, message);
+		await checkTierAPI(checkedArgs, result, messageData, message);
 		if (messageData.length == args.length) throw ["none", messageData];
 		// const [result, md] = await pokeNavCheck(checkedArgs, message);
 		// md.forEach((item) => messageData.push(item));
@@ -511,7 +511,10 @@ async function checkTierAPI(input, result, messageData, message) {
 					messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
 					continue;
 				}
-			}
+	  	} else { //indents
+							messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
+							continue;
+						}
 		}
 		if (!result.has(guessTier)) result.set(guessTier, [{ name:bossName }]);
 		else {
