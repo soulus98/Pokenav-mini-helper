@@ -10,12 +10,13 @@
 * Changed role names to Pascal_Snake_CaseRaid
 * Fixed some bugs in the notify system
 
-#### v2.0.3 (2022-Sep-0?)
+#### v2.0.3 (2022-Sep-25)
+* Swapped to official asset sprites in `]notify`
 * Fixed override & reworked it to allow multiple bosses/emoji
-* Fixed api update
+* Fixed `]api update`
 * Saved some API calls by checking the reactions before reacting
 * Removed temporary footer tier info
-* Fixed a few more bugs in ]n and ]cn
+* Fixed a few more bugs in `]notify` and `]cn`
 
 # v1.3 (2022-Jul-07)
 * Made a raid announce channel category switcher for PokeNav
