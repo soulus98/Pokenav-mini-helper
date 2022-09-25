@@ -511,16 +511,17 @@ async function checkTierAPI(input, result, messageData, message) {
 					messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
 					continue;
 				}
-	  	} else { //indents
-							messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
-							continue;
-						}
+			} else {
+				messageData.push(`Boss :${bossName} has not yet been predicted to be a raid boss. Please update the API or use \`${ops.prefix}override\``);
+				continue;
+			}
 		}
 		if (!result.has(guessTier)) result.set(guessTier, [{ name:bossName }]);
 		else {
 			result.get(guessTier).push({ name:bossName });
 		}
 	}
+	return;
 }
 
 async function discernGuessTier(rawTier) {
@@ -560,7 +561,7 @@ async function makeRoles(input, message) {
 					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
 				});
 				const roleName = newName + "Raid";
-				const bossName = name.replace(/_/g, "-");
+				const pokeNavName = name.replace(/_/g, "-");
 				const role = server.roles.cache.find(r => r.name == roleName);
 				if (!role) {
 					console.log(`[${server.name}]: Creating role: ${roleName}.`);
@@ -568,7 +569,7 @@ async function makeRoles(input, message) {
 				} else {
 					console.log(`[${server.name}]: Role: ${roleName} already exists.`);
 				}
-				const msg = await pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${bossName}"`);
+				const msg = await pokenavChannel.send(`<@428187007965986826> create notify-rule ${roleName} "boss:${pokeNavName}"`);
 				msg.delete();
 				if (sId == client.configs.lastKey() && tier[1].indexOf(bossItem) == tier[1].length - 1 && input.lastKey() == tier[0]) {
 					return;
@@ -585,7 +586,7 @@ async function deleteRoles(input, message) {
     const server = await client.guilds.fetch(sId);
 		for (const tier of input){
 			for (const bossItem of tier[1]) {
-				const bossName = bossItem.name;
+				const bossName = bossItem.name.replace("_FORM", "");
 				const newName = bossName.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
 				function(txt) {
 					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
@@ -627,76 +628,97 @@ async function deleteRoles(input, message) {
 async function makeEmoji(input, message) {
 	const ops = message.client.configs.get(message.guild.id);
 	const messageData = [];
-	try {
-		const emojiServer = await message.client.guilds.cache.get("994034906306969691");
-		const allEmoji = await emojiServer.emojis.fetch(undefined, { force: true });
-		for (const [k, v] of input) {
-			for (const item of v) {
-				let lookupName = item.name;
-				let num = pokemonLookup.get(lookupName)?.num;
-				if (!num || isNaN(num) || num < 1) {
-					if (lookupName.includes("_")) lookupName = lookupName.split("_")[0];
-					num = pokemonLookup.get(lookupName)?.num;
-					if (!num || isNaN(num) || num < 1) {
-						console.error(`${item.name} num not good num (<1 !num or NaN).`);
-						console.error("num = ", num);
-						messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`${ops.prefix}api update\` or use \`${ops.prefix}override\`.`);
-						if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
-						else continue;
-					}
+	const emojiServer = await message.client.guilds.cache.get("994034906306969691");
+	const allEmoji = await emojiServer.emojis.fetch(undefined, { force: true });
+	for (const [k, v] of input) {
+		for (const item of v) {
+			let lookupName = item.name;
+			let num = pokemonLookup.get(lookupName)?.num;
+			if (!num || isNaN(num) || num < 1) {
+				if (lookupName.includes("_")) lookupName = lookupName.split("_")[0];
+				num = pokemonLookup.get(lookupName)?.num;
+				if (!num || isNaN(num) || num < 1) { // todo: user input
+					console.error(`${item.name} num not good num (<1 !num or NaN).`);
+					console.error("num = ", num);
+					messageData.push(`I could not find a pokedex number for: ${item.name}. Either update the \`${ops.prefix}api update\` or use \`${ops.prefix}override\`.`);
+					continue;
 				}
-				if (num > 8000) {
-					console.error(`${item.name} mega not found (>=8000).`);
-					messageData.push(`I could not find the correct URL for this mega pokemon: ${item.name}. Either update the \`${ops.prefix}api update\` or use \`${ops.prefix}override\`.`);
-					if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
-					else continue;
-				}
-				if (num < 9) num = "00" + num;
-				else if (num < 99) num = "0" + num;
-				const urlName = item.name.toLowerCase().replace(/_/g, "-").replace("-form", "");
-				const emoji = allEmoji.find(e => e.name.toLowerCase() == item.name.toLowerCase());
-				const emojiName = item.name.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi,
-				function(txt) {
+			}
+			if (num > 8000) {// todo: user imput
+				console.error(`${item.name} mega not found (>=8000).`);
+				messageData.push(`I could not find the correct Pokedex number for this mega pokemon: ${item.name}. Either update the \`${ops.prefix}api update\` or use \`${ops.prefix}override\`.`);
+				continue;
+			}
+			const emoji = allEmoji.find(e => e.name.toLowerCase() == item.name.toLowerCase());
+			if (emoji) {
+				console.log(`An Emoji named ${item.name} already existed on the emojiServer`);
+				item.identifier = emoji.identifier;
+			} else {
+				const emojiName = item.name.replace(/(?<=^|[^a-z])[a-z]+(?=$|[^a-z])/gi, (txt) => {
 					return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
 				});
-				const url = `https://static.pokenav.app/images/pokemon-icons/png/128/${num}-${urlName}.png`;
-				const backupUrl = `https://static.pokenav.app/images/pokemon-go-icons/png/128/${num}-${urlName}.png`;
-				if (emoji) {
-					console.log(`An Emoji named ${item.name} already existed on the emojiServer`);
-					item.identifier = emoji.identifier;
-				} else {
-					console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
-					const res = await emojiServer.emojis.create(url, emojiName).then((e) => e.identifier).catch(err => err);
-					if (res.message?.includes("image: Invalid image data") || res.code == "EMOJI_TYPE") {
-						const res2 = await emojiServer.emojis.create(backupUrl, emojiName).then((e) => e.identifier).catch(err => err);
-						if (res2.message?.includes("image: Invalid image data") || res.code == "EMOJI_TYPE") {
-							console.log(`${item.name} thumbnail was not available as an emoji.`);
-							messageData.push(`There was no thumbnail for the emoji for \`${item.name}\`. Please add the emoji manually using \`${ops.prefix}override\`.`);
-						} else if (res2.message) {
-							console.error(`I could not create an emoji for ${item.name}. Unknown error. Tell Soul.`);
-							console.error("Error 1:");
-							console.error(res);
-							console.error("Error 2:");
-							console.error(res2);
-							messageData.push(`Unknown Emoji ${item.name}. Please tell <@${dev}>`);
-						}
-					} else if (res.code == 50035) {
-						console.error(`I could not create an emoji for ${item.name}. String validation regex. Tell Soul.`);
-						console.error(res);
-						messageData.push(`String regex issue for ${item.name}. Please tell <@${dev}>`);
-					} else if (res.code) {
-						console.error(`Cache may have fail when making an emoji for ${item.name}. It might have already existed...?`, res);
-					} else {
+				console.log(`Creating an Emoji named ${item.name} on the emojiServer`);
+				const urlName = item.name.replace("_FORM", "");
+				let urlSplitName;
+				try {
+					if (!urlName.includes("_")) throw "failed";
+					const urlSplitNameArr = urlName.split("_");
+					urlSplitNameArr.shift();
+					urlSplitName = urlSplitNameArr.join("-");
+					const formUrl = path.resolve(__dirname, `../sprites/${num}-${urlSplitName}.png`);
+					const resForm = await makeSingleEmoji(formUrl, emojiName);
+					item.identifier = resForm;
+				} catch (e) {
+					if (e != "failed") {
+						console.error(`Unexpected error making emoji (with form) ${item.name}`);
+						console.error(e);
+						messageData.push(`I encountered an unexpected error when creating the emoji: ${item.name}. Tell <@${dev}>.`);
+						continue;
+					}
+					if (urlName.includes("_")) {
+						console.log(`Could not find: ${path.resolve(__dirname, `../sprites/${num}-${urlSplitName}.png`)}. Trying again without form.`);
+						message.reply(`I could not find the \`${num}-${urlSplitName}.png\` sprite. Retrying as just \`${num}.png\`... Tell <@${dev}>`);
+					}
+					const url = path.resolve(__dirname, `../sprites/${num}.png`);
+					console.log("testo", url);
+					try {
+						const res = await makeSingleEmoji(url, emojiName);
 						item.identifier = res;
+					} catch (err) {
+						console.error(`Unexpected error making emoji ${item.name}`);
+						console.error(err);
+						messageData.push(`I encountered an unexpected error when creating the emoji: ${item.name}. Tell <@${dev}>.`);
+						continue;
 					}
 				}
-				if (v.indexOf(item) == v.length - 1 && input.lastKey() == k) return messageData;
+
+				// if (err.code == 50035) {
+				// 	console.error(`I could not create an emoji for ${item.name}. String validation regex. Tell Soul.`);
+				// 	console.error(err);
+				// 	messageData.push(`String regex issue for ${item.name}. Please tell <@${dev}>`);
+				// } else if (err.code) {
+				// 	console.error(`Cache may have fail when making an emoji for ${item.name}. It might have already existed...?`, res);
+				// }
 			}
 		}
-	} catch (e) {
-		console.error(e);
 	}
+	return messageData;
+
+	async function makeSingleEmoji(url, emojiName) {
+		try {
+			const res = await emojiServer.emojis.create(url, emojiName).then((e) => e.identifier);
+			return res;
+		} catch (err) {
+			if (err.message?.includes("image: Invalid image data") || err.code == "EMOJI_TYPE" || err.code == "ENOENT") {
+				throw "failed";
+			} else {
+				throw err;
+			}
+		}
+	}
+
 }
+
 
 async function deleteEmoji(input, message) {
 	const emojiServer = message.client.guilds.cache.get("994034906306969691");
